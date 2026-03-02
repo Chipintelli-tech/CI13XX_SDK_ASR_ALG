@@ -7,7 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include "audio_play_os_port.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -539,3 +540,4 @@ audio_play_os_state_t audio_play_event_group_set_bits_isr(audio_play_os_event_gr
     }
     return AUDIO_PLAY_OS_SUCCESS;
 }
+#endif

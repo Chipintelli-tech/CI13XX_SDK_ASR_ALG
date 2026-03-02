@@ -10,13 +10,15 @@
 #include "command_info.h"
 #include "ci130x_spiflash.h"
 #include "prompt_player.h"
-#include "audio_play_api.h"
 #include "audio_in_manage.h"
 #include "ringbuffer.h"
 #include "tts_audio.h"
 #include "string.h"
 #include "user_config.h"
 
+#if !SIMPLE_AUDIO_PLAYER_ENABLE
+#include "audio_play_api.h"
+#endif
 #if USE_TTS
 
 #define TIMEOUT_ONE_PACKET_INTERVAL (1000) /*ms, in this code, it should be bigger than portTICK_PERIOD_MS */

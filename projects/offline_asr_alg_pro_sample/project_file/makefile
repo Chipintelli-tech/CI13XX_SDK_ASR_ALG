@@ -47,7 +47,7 @@ USE_ANY_MIC_AEC	  := 19
 #CWSL+DOA+AEC:需要外部挂7243e codec -双mic算法，仅双mic可用 
 USE_CWSL_DOA_AEC  := 20
 #CWSL+ANY MIC+AEC:需要外部挂7243e codec -双mic算法，仅双mic可用 
-USE_CSWL_ANY_MIC_AEC	:= 21
+USE_CWSL_ANY_MIC_AEC	:= 21
 #DOA+DEREVERB+AEC:需要外部挂7243e codec	-双mic算法，仅双mic可用 
 USE_DOA_DEREVERB_AEC	:= 22
 
@@ -60,10 +60,12 @@ CI_ALG_TYPE := $(USE_NULL)
 USE_PWK_ENABLE                 := 0
 #---是否开启动态ALC功能，1:开启，0:关闭; -单mic算法，仅单mic可用
 USE_ALC_AUTO_SWITCH_MODULE     := 0
-#---意图数量:1-单意图   >1为多意图，最大支持3意图, CWSL自学习算法和BF算法不支持多意图, 多意图开AEC，只支持唤醒词打断
+#---意图数量: 1-单意图   >1为多意图，最大支持3意图, CWSL自学习算法和BF算法不支持多意图, 多意图开AEC，只支持唤醒词打断
 MULT_INTENT                    := 1
 #---大模型使能(声学模型≥2M需要使能该参数)
 USE_LARGE_MODEL                := 0
+#---播放器类型: 0-精简播放器(相比老播放器节约内存15KB,功能简单) 1-老播放器(占内存较多，功能完善)
+USE_AUDIO_PLAYER_TYPE          := 1
 ########################################################################
 
 #算法功能编译配置
@@ -198,7 +200,7 @@ USE_DECODE_FRM := 1
 ifeq ($(USE_LARGE_MODEL), 1)
 C_FLAGS += -DUSE_LARGE_MODEL=1
 endif
-else ifeq ($(CI_ALG_TYPE), $(USE_CSWL_ANY_MIC_AEC))
+else ifeq ($(CI_ALG_TYPE), $(USE_CWSL_ANY_MIC_AEC))
 ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_cwsl_any_mic_aec.lds
 C_FLAGS += -DUSE_CWSL=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DUSE_DUAL_MIC_ANY=1 -DUSE_AEC_MODULE=1  -DHOST_CODEC_CHA_NUM=2  -DHOST_MIC_USE_NUMBER=2
 LIBS := -lasr_dis_deepse_v2
@@ -225,6 +227,12 @@ else
 $(error "error:请配置正确的CI_ALG_TYPE参数!!!")
 endif
 
+
+ifeq ($(USE_AUDIO_PLAYER_TYPE), 0)
+	C_FLAGS += -DSIMPLE_AUDIO_PLAYER_ENABLE=1
+else
+	C_FLAGS += -DSIMPLE_AUDIO_PLAYER_ENABLE=0
+endif
 ifeq ($(USE_PWK_ENABLE), 1)
 	USE_DECODE_FRM := 1
 	C_FLAGS += -DUSE_PWK=1

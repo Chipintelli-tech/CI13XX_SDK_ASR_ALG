@@ -7,5 +7,4 @@
 #include "flash_manage_outside_port.h"
 #include "ci_flash_data_info.h"
 
-int check_ota_finish(void);
 #endif  //__OTA_PATTITION__VERIFY_H__

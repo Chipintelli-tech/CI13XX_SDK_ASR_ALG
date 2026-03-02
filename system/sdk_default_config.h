@@ -19,9 +19,9 @@
 #define MERGE_OFFLINE_SDK_VERSION     "2.1.8"
 // SDK VER
 #define SDK_VERSION                    2
-#define SDK_SUBVERSION                 6
-#define SDK_REVISION                   3
-#define SDK_TYPE                       "ALG_PRO"
+#define SDK_SUBVERSION                 7
+#define SDK_REVISION                   12
+#define SDK_TYPE                       "ASR_ALG"
 
 /******************************** 开发板选择 **********************************/
 //板级支持配置
@@ -390,6 +390,11 @@
 
 
 /**************************** audio player config ****************************/
+
+//**播放器类型选择
+#ifndef SIMPLE_AUDIO_PLAYER_ENABLE
+#define SIMPLE_AUDIO_PLAYER_ENABLE            0  /* 1:使用精简播放器(节省内存-19KB)  0：使用老播放器 */
+#endif
 /* 注册prompt解码器 */
 #ifndef USE_PROMPT_DECODER
 #define USE_PROMPT_DECODER                   1
@@ -812,10 +817,8 @@
 #define MIC_DIFF_SINGLE                     0              //1，单端。0，差分（通用模块都是差分模式，省成本的模块为单端（MICN_L 接GND）时，需要配置为SINGLE）
 #endif
 
-#define CIAS_FLASH_IMAGE_UPGRADE_FLAG_ADDR      (0X9000)   //for ota,固定不可修改
-#ifndef CI_OTA_ENABLE
-#define CI_OTA_ENABLE                       0
-#endif
+#define OTA_STA_UPDATE              0xFC                  //不可修改
+#define OTA_STA_FINISH              0xF0                  //不可修改
 
 #if (USE_LOWPOWER_DOWN_FREQUENCY || USE_SOFT_AEC_REF)
 #undef INNER_CODEC_AUDIO_IN_USE_RESAMPLE

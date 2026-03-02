@@ -38,6 +38,13 @@ source-file: components/flash_control/flash_control_src/flash_control_inner_port
 source-file: components/ota/ota_aes.c
 source-file: components/ota/ota_partition_verify.c
 
+//source-file: components/player/sonic/sonic.c
+
+source-file: components/simple_audio_player/simple_audio_player.c
+source-file: components/simple_audio_player/player_data_fetcher.c
+source-file: components/simple_audio_player/mp3_decoder_api.c
+
+
 source-file: components/player/audio_play/audio_play_api.c
 source-file: components/player/audio_play/audio_play_decoder.c
 source-file: components/player/audio_play/audio_play_process.c
@@ -88,11 +95,12 @@ source-file: components/msg_com/voice_module_uart_protocol_g1.c
 source-file: components/msg_com/i2c_protocol_module.c
 source-file: components/msg_com/voice_module_uart_protocol.c
 source-file: components/msg_com/voice_module_uart_tts_protocol.c
-
-
 source-file: components/led/color_light_control.c
 source-file: components/led/led_light_control.c
 
+//ci_adpcm
+source-file: components/ci_adpcm/cias_adpcm.c
+source-file: components/ci_adpcm/cias_record_demo.c
 //source-file: components/example/iic_test.c
 
 source-file: components/audio_pre_rslt_iis_out/ci130x_audio_pre_rslt_out.c
@@ -173,49 +181,8 @@ library-file: $(LIBS_PATH)/libcwsl_v2.a
 library-file: $(LIBS_PATH)/libtts.a
 library-file: components/ci_ble/stack/libOnMicroBLE.a
 library-file: components/ci_ble/stack/libcias_crypto.a
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_audio_data_handle.c
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_network_msg_protocol.c
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_network_msg_send_task.c
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_uart_protocol.c
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_voice_upload.c
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_voice_plyer_handle.c
-//speex
-//source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/src/framing.c                      
-//source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/src/bitwise.c   
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/bits.c                     
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/cb_search.c                
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/exc_5_64_table.c           
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/exc_5_256_table.c          
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/exc_8_128_table.c          
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/exc_10_16_table.c          
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/exc_10_32_table.c          
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/exc_20_32_table.c          
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/filters.c                  
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/gain_table.c               
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/gain_table_lbr.c           
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/hexc_10_32_table.c         
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/hexc_table.c               
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/high_lsp_tables.c          
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/kiss_fft.c                 
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/kiss_fftr.c                
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/lpc.c                      
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/lsp.c                      
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/lsp_tables_nb.c            
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/ltp.c                      
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/modes.c                    
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/modes_wb.c                 
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/nb_celp.c                  
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/quant_lsp.c                
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/sb_celp.c                  
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/smallft.c                  
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/speex.c                    
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/speex_callbacks.c          
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/stereo.c                               
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/vbr.c                      
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/vorbis_psy.c               
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/vq.c                       
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex/window.c    
-source-file: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/port/ci110x_speex.c
+
+
 
 //ci_ble_demo
 source-file: projects/offline_asr_alg_pro_sample/app/app_ble/app_ble.c
@@ -261,9 +228,11 @@ include-path: components/asr/nn_and_flash/nn_and_flash_inc
 include-path: components/fft
 include-path: components/nlp
 include-path: components/protocol
+include-path: components/ci_adpcm
 
 include-path: components/msg_com
 include-path: components/led
+include-path: components/simple_audio_player
 include-path: components/player/audio_play
 include-path: components/player/mp3lib/mp3pub
 include-path: components/player/aaclib/aacpub
@@ -284,7 +253,6 @@ include-path: components/assist/SEGGER
 include-path: components/assist/SEGGER/config
 include-path: components/nuclear_com
 include-path: components/audio_pre_rslt_iis_out
-include-path: projects/offline_asr_alg_pro_sample/app/app_audio_handle
 include-path: projects/offline_asr_alg_pro_sample/app/app_cwsl
 include-path: projects/offline_asr_alg_pro_sample/app/app_doa
 include-path: projects/offline_asr_alg_pro_sample/app/app_main
@@ -312,12 +280,6 @@ include-path: projects/offline_asr_alg_pro_sample/app/app_ir/LinkMsgProc
 include-path: projects/offline_asr_alg_pro_sample/app/app_ir/ir_src
 include-path: projects/offline_asr_alg_pro_sample/app/app_ir/device
 include-path: projects/offline_asr_alg_pro_sample/app/app_ir/eut_test
-//speex
-include-path: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/include/speex
-include-path: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/include/ogg
-include-path: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/include
-include-path: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/libspeex
-include-path: projects/offline_asr_alg_pro_sample/app/app_audio_handle/cias_speex/port
 
 
 //stack

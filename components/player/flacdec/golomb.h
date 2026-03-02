@@ -18,7 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include <limits.h>
 #include "bitstreamf.h"
 
@@ -129,3 +130,4 @@ __STATIC_INLINE int get_sr_golomb_shorten(GetBitContext* gb, int k)
     else
         return uvar >> 1;
 }
+#endif

@@ -7,7 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _AUDIO_PLAY_DEVICE_H_
 #define _AUDIO_PLAY_DEVICE_H_
 
@@ -43,3 +44,4 @@ void audio_play_hw_fix_pop_issue_soft_done(void);
 /** @} */
 
 #endif /* _AUDIO_PLAY_DEVICE_H_ */ 
+#endif

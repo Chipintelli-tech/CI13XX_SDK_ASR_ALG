@@ -7,6 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include "adpcmdec.h"
 #include "adpcm.h"
 #include "ci_log.h"
@@ -82,3 +84,4 @@ void de_codeadpcm_mono_to_mono(char *src, unsigned int size, short *dst)
     }
 }
 
+#endif

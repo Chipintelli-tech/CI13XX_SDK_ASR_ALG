@@ -10,16 +10,19 @@ typedef struct
     //short**  feature_dense_buf;         //521->60
     uint8_t  vad_start_flag;            //vad 开始标记
     uint8_t  vad_end_flag;              //vad 结束标记
-    uint8_t  wakeup_success_flag;       //唤醒成功标志
     short    wakeup_start_index;        //唤醒次开始帧
     short    wakeup_frame_len;          //唤醒词长度
-    short    feature_dense_buf_index;      
+    short    feature_dense_buf_index;
+    short    mic_l_pcm_buf_index;
+    uint8_t  init_doa_param_flag;       //初始化doa参数标记
+    short    vad_start_buf_index;      
 	short*   pad_in;
 	short*   Cont_m;
 	short*   Cont_l;
 	short*   f_tmp1;
 	short*   f_tmp2;
 	short*   Alpha;
+    short*   mic_l;
 	short*   Attentive_out;
 	float*   logits;
     uint32_t doa_nn_model_w;

@@ -42,7 +42,8 @@
  *
  * aacdec.h - public C API for AAC decoder
  **************************************************************************************/
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _AACDEC_H
 #define _AACDEC_H
 
@@ -148,3 +149,4 @@ void AACFreeTrigtabsFloat(void);
 #endif
 
 #endif  /* _AACDEC_H */
+#endif

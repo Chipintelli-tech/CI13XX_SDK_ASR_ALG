@@ -42,7 +42,8 @@
  *
  * aaccommon.h - implementation-independent API's, datatypes, and definitions
  **************************************************************************************/
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _AACCOMMON_H
 #define _AACCOMMON_H
 
@@ -196,3 +197,4 @@ extern const unsigned char tnsMaxBandsLong[2*NUM_SAMPLE_RATES];
 extern const unsigned char tnsMaxOrderLong[AAC_NUM_PROFILES];
 
 #endif	/* _AACCOMMON_H */
+#endif

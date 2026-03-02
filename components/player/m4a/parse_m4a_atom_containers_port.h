@@ -7,6 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
+#include "user_config.h"
+ #if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _PARSE_M4A_ATOM_CONTAINERS_PORT_H_
 #define _PARSE_M4A_ATOM_CONTAINERS_PORT_H_
 
@@ -49,3 +51,4 @@ int mf_seek(mem_file_t *handle, long offset, int fromwhere);
 
 #endif
 
+#endif

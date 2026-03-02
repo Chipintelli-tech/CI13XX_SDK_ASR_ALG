@@ -8,7 +8,7 @@
 #include "ci130x_uart.h"
 #include "command_info.h"
 #include "sdk_default_config.h"
-
+#include "ci_nvdata_manage.h"
 
 #ifndef _VOICE_MODULE_UART_PROTOCOL_
 #define _VOICE_MODULE_UART_PROTOCOL_
@@ -40,10 +40,20 @@ typedef struct
     /*uint16_t chksum; send add auto*/
     /*uint8_t tail; send add auto*/
 }sys_msg_com_data_t;
-
-
 #pragma pack()
 
+#pragma pack(1)
+typedef struct
+{
+    uint8_t status;
+    uint8_t ota_chip_type_1306;
+    uint32_t timeout;
+    uint32_t retry_time;
+    uint32_t log_uart_number;
+    uint32_t ota_uart_number;
+    UART_BaudRate ota_uart_baud;
+}ota_nv_status_t; 
+#pragma pack() 
 /*header*/
 #define VMUP_MSG_HEAD_LOW  (0xA5)
 #define VMUP_MSG_HEAD_HIGH (0xFC)
@@ -59,7 +69,7 @@ typedef struct
 #define VMUP_MSG_TYPE_CMD_DOWN (0xA1)
 #define VMUP_MSG_TYPE_ACK      (0xA2)
 #define VMUP_MSG_TYPE_NOTIFY   (0xA3)
-#if USE_IR_ENABEL
+#if USE_IR_ENABLE
 #define VMUP_MSG_TYPE_TEST     (0xA4)
 #endif
 
@@ -127,7 +137,7 @@ void userapp_deal_cmd(sys_msg_com_data_t *msg);
 void userapp_deal_com_msg(sys_msg_com_data_t *msg);
 void userapp_send_com_test(void);
 void vmup_send_asr_result_cmd(cmd_handle_t cmd_handle, uint8_t asr_score);
-
+cinv_item_ret_t write_ota_mcu_status(uint8_t status);
 
 
 #ifdef __cplusplus

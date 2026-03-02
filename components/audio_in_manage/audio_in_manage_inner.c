@@ -409,7 +409,7 @@ void audio_in_manage_inner_task(void *p)
     // vTaskDelay(pdMS_TO_TICKS(5000));
     #endif
 
-    #if 1//(USE_IIS1_OUT_PRE_RSLT_AUDIO)
+    #if USE_IIS1_OUT_PRE_RSLT_AUDIO || RECORD_PLAY_BY_FLASH_ENABLE || USE_UART_SEND_PRE_RSLT_AUDIO
     audio_pre_rslt_out_play_card_init();
     #endif
     //语音前端算法处理模块初始化
@@ -591,3 +591,4 @@ __attribute__((weak)) void ci_doa_get_cb(int doa){}
 __attribute__((weak)) void ci_pwk_get_cb(int db_val){}
 __attribute__((weak)) int ci_doa_get(void){return 0;}
 __attribute__((weak)) void sed_rslt_cb(void* data){}
+__attribute__((weak)) void ci_bnpu_err_print(int bnpu_err_type) {}

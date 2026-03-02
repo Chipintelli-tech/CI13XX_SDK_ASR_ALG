@@ -45,7 +45,6 @@ void _init()
     set_osc_clk(SRC_FREQUENCY_LOWPOWER);
     #else
     set_apb_clk(SRC_FREQUENCY_NORMAL/2);
-   
     #if (USE_EXTERNAL_CRYSTAL_OSC == 0)
     load_freq_correct_factor();
     #endif
@@ -62,6 +61,7 @@ void _init()
     disable_mcycle_minstret();
 
     //SystemInit();
+
     //init_clk_div();
     init_irq_pri();
 
@@ -78,15 +78,6 @@ void _init()
     UARTPollingConfig((UART_TypeDef*)STDOUT_INTERFACE, UART_BaudRate921600);
 #endif
 #endif
-    #if CI_OTA_ENABLE
-    flash_clk_div_init(QSPI0);
-    flash_init(QSPI0, DISABLE);
-    if(RETURN_OK != ota_aes_msg_check())
-    {
-        while(1);   //ota参数保存错误
-    }
-    spic_protect(QSPI0, true);
-    #endif
 }
 
 void _fini()

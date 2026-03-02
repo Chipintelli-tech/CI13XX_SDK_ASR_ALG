@@ -38,7 +38,7 @@ void userapp_initial(void)
     #if MSG_USE_I2C_EN
     i2c_communicate_init();
     #endif
-    #if USE_IR_ENABEL   //红外任务初始化
+    #if USE_IR_ENABLE   //红外任务初始化
     ir_task_init(); 
     get_flash_eut_state();   //获取下自动测试状态
     xTaskCreate(DeviceTaskProcess, "DeviceTaskProcess", 300, NULL, 4, NULL);

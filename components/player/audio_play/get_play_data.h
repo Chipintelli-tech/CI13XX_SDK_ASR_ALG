@@ -7,7 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _GET_PLAY_DATA_H_
 #define _GET_PLAY_DATA_H_
 
@@ -73,3 +74,4 @@ extern uint32_t get_net_download_offset(void);
 /** @} */
 
 #endif /*_GET_PLAY_DATA_H_*/
+#endif

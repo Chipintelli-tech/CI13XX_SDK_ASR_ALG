@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 void* doa_apply_init(doa_apply_config_t doa_init_config);
-int ci_doa_deal_for_application(void *doa, void* doa_apply, float **fft_in, doa_apply_config_t doa_apply_config);
+int ci_doa_deal_for_application(void *doa, void* doa_apply, float **fft_in, short *mic_l, doa_apply_config_t doa_apply_config);
 int set_doa_out_type(int type);    //设置doa角度输出类型
 
 

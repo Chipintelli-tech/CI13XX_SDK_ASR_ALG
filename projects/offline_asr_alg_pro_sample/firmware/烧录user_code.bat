@@ -15,10 +15,10 @@ echo project offline_asr_sample
 
 @REM copy ..\..\bnpu_core\firmware\user_code\[1]code.bin  .\user_code
 
-echo make user.bin
+@REM echo make user.bin
 @REM copy %TOOLS_PATH%\..\libs\libfbin_pro.a user_code\[1]code.bin
-%TOOLS_PATH%\ci-tool-kit.exe merge user-file -i user_code
-del user_code\[1]code.bin
+@REM %TOOLS_PATH%\ci-tool-kit.exe merge user-file -i user_code
+@REM del user_code\[1]code.bin
 
 
 %TOOLS_PATH%\code_program.exe user_code\user_code.bin %1

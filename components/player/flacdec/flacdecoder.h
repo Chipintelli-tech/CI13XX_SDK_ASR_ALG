@@ -1,3 +1,5 @@
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _FLAC_DECODER_H
 #define _FLAC_DECODER_H
  
@@ -40,4 +42,5 @@ typedef struct FLACContext
 int flac_decode_frame24(FLACContext *s, uint8_t *buf, int buf_size, int32_t *wavbuf);
 int flac_decode_frame16(FLACContext *s, uint8_t *buf, int buf_size, int16_t *wavbuf);
 int flac_seek_frame(uint8_t *buf,uint32_t size,FLACContext * fc);
+#endif
 #endif

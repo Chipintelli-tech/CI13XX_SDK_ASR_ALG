@@ -16,17 +16,17 @@
 #include "timers.h"
 #include "semphr.h"
 #include "ci_log.h"
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+#include "simple_audio_player.h"
+#else
 #include "audio_play_api.h"
+#endif
 #include "sed_app_host.h"
-#include "cias_network_msg_protocol.h"
-#include "cias_network_msg_send_task.h"
-#include "cias_voice_upload.h"
 #include "sdk_default_config.h"
 #include "ci130x_iisdma.h"
 #include "ci130x_iis.h"
 #include "ci130x_lowpower.h"
 #include "ci130x_core_misc.h"
-// #include "ci130x_audio_capture.h"
 #include "voice_module_uart_protocol.h"
 #include "prompt_player.h"
 #include "product_semantic.h"
@@ -39,7 +39,7 @@
 #include "remote_api_for_host.h"
 
 #include "cwsl_manage.h"
-#if USE_IR_ENABEL
+#if USE_IR_ENABLE
 #include "main_device.h"
 #include "middle_device.h"
 #include "ir_uart_msg_deal.h"
@@ -89,7 +89,7 @@ static int8_t ignore_exit_wakeup = 0;
 static int8_t ignore_asr_msg = 0;
 
 
-#if USE_IR_ENABEL
+#if USE_IR_ENABLE
 static int exit_wakeup_timeout = EXIT_WAKEUP_TIME;
 
 void change_wakeup_period(uint32_t exit_wakup_ms)
@@ -105,7 +105,11 @@ void change_wakeup_period(uint32_t exit_wakup_ms)
  */
 bool check_current_playing(void)
 {
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+    if (sap_get_state() != SAP_STATE_IDLE)
+#else
     if(AUDIO_PLAY_STATE_IDLE != get_audio_play_state())
+#endif
     {
         return true;
     }
@@ -168,7 +172,7 @@ void pause_asr(uint8_t voice_in_mute, uint8_t pause_asr_task)
 
     sys_manage_data.pause_asr_count++;
 #endif
-#if USE_IR_ENABEL
+#if USE_IR_ENABLE
       xTimerStop(exit_wakeup_timer,0);
 #endif
 }
@@ -206,7 +210,7 @@ void  resume_asr()
         }
     }
 #endif
-    #if USE_IR_ENABEL
+    #if USE_IR_ENABLE
     if (sys_manage_data.wakeup_state == SYS_STATE_WAKEUP)
     {
         xTimerChangePeriod(exit_wakeup_timer, pdMS_TO_TICKS(exit_wakeup_timeout),0);/*or used a new timer*/
@@ -478,7 +482,7 @@ void play_exit_wakeup_done_cb(cmd_handle_t cmd_handle)
     send_msg.msg_data.cmd_info_data.cmd_info_status = MSG_CMD_INFO_STATUS_POST_CHANGE_ASR_WAKEUP_WORD;
     send_msg_to_sys_task(&send_msg, NULL);
     mprintf("inactivate\n");
-    #if USE_IR_ENABEL
+    #if USE_IR_ENABLE
     user_led_light_flash();
     #endif
 
@@ -524,7 +528,7 @@ void exit_wakeup_deal(uint32_t asr_busy_check)
     vpr_delete_all_flag = 0;
     g_voice_print_rec_index = -1;
     #endif
-    #if USE_IR_ENABEL
+    #if USE_IR_ENABLE
     main_device_overLearnIR(pdFALSE, 0);
     #endif
     xSemaphoreGive(WakeupMutex);
@@ -592,7 +596,7 @@ void enter_wakeup_deal(uint32_t exit_wakup_ms, cmd_handle_t cmd_handle )
             }
         #endif
 
-        #if USE_IR_ENABEL
+        #if USE_IR_ENABLE
         if (NULL != DeviceGetLearnModeDevice())
         {
             //有匹配的时候 退出匹配状态
@@ -766,7 +770,6 @@ void sys_deal_cmd_info_msg(sys_msg_cmd_info_data_t *cmd_info_msg)
 }
 
 static void *weakup_asr_hander = NULL;
-volatile bool asr_reseult_wakup_falg = false;
 extern volatile int cias_wakeup_cmd_flag;
 
 #if USE_CWSL
@@ -829,7 +832,7 @@ void sys_deal_asr_msg(sys_msg_asr_data_t *asr_msg)
             ciss_set(CI_SS_CMD_STATE_FOR_SSP,CI_SS_CMD_IS_WAKEUP);
             if (cwsl_get_status() != CWSL_STA_REG_TEMPLATE)
             {
-                #if USE_IR_ENABEL
+                #if USE_IR_ENABLE
                 uint32_t semantic_id = cmd_info_get_semantic_id(cmd_handle);
                 if (MAIN_ASR_ONESHORT_OPEN_AIR == semantic_id)
                 {
@@ -851,11 +854,9 @@ void sys_deal_asr_msg(sys_msg_asr_data_t *asr_msg)
             mprintf("----voice_upload_disable---\n");
             if(cmd_handle == weakup_asr_hander)
             {	
-                asr_reseult_wakup_falg = true;
             }
             else
             {
-                asr_reseult_wakup_falg = false;
                 cias_send_cmd(LOCAL_ASR_RESULT_NOTIFY, DEF_FILL);
                 voice_upload_disable();
                 mprintf("====LOCAL_ASR_RESULT_NOTIFY===\n");
@@ -962,7 +963,7 @@ void sys_deal_asr_msg(sys_msg_asr_data_t *asr_msg)
             #if (VOICE_PLAY_BY_UART)
                 cias_wakeup_cmd_flag = 1;
             #endif  
-            #if USE_IR_ENABEL
+            #if USE_IR_ENABLE
             uint32_t semantic_id = cmd_info_get_semantic_id(cmd_handle);
             if (MAIN_ASR_ONESHORT_OPEN_AIR == semantic_id)
             {
@@ -987,7 +988,6 @@ void sys_deal_asr_msg(sys_msg_asr_data_t *asr_msg)
             mprintf("----voice_upload_disable---\n");
             if(cmd_handle == weakup_asr_hander)
             {	
-                asr_reseult_wakup_falg = true;
             }
             else
             {
@@ -1087,9 +1087,8 @@ void UserTaskManageProcess(void *p_arg)
     #endif    
     xTaskResumeAll();
 
-   // nlp_timer_init();
     /* 退出唤醒timer和led pwm控制timer 初始化 */
-    #if USE_IR_ENABEL
+    #if USE_IR_ENABLE
     exit_wakeup_timer = xTimerCreate("exit_wakeup", pdMS_TO_TICKS(exit_wakeup_timeout),
         pdFALSE, (void *)0, exit_wakeup_timer_callback);
     #else
@@ -1177,16 +1176,6 @@ void UserTaskManageProcess(void *p_arg)
                         #else
                         play_exit_wakeup_done_cb(INVALID_HANDLE);
                         #endif
-                        #if USE_VPR || USE_WMAN_VPR   //算法带加密功能，播放加密状态
-                        while (REMOTE_CALL(get_aes_state()) == -1);
-                        {
-                            vTaskDelay(pdMS_TO_TICKS(5));
-                        }
-                        if(REMOTE_CALL(get_aes_state()) == 2)  //未烧录量产密码
-                        {
-                            prompt_play_by_cmd_string("<alg_aes_check>", 1, NULL, false);
-                        }
-                        #endif
                     }
 					/* 通过串口协议发送模块上电通知 */
                     #if (EXCEPTION_RST_SKIP_BOOT_PROMPT)
@@ -1229,3 +1218,16 @@ void ci_pwk_get_cb(int db_val)
 }
 #endif
 
+//暂时未启用
+void  ci_bnpu_err_print(int bnpu_err_type)
+{
+	mprintf("bnpu err_type = %d\r\n", bnpu_err_type);
+	switch(bnpu_err_type)
+	{
+		case 0x01:
+			mprintf("audio deal too slow\r\n");
+			break;
+        default:
+            break;
+	}
+}

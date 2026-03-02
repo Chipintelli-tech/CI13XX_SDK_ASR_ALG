@@ -7,7 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef AUDIO_PLAY_OS_PORT_H
 #define AUDIO_PLAY_OS_PORT_H
 
@@ -120,3 +121,4 @@ void *audio_play_realloc(void *pv, size_t size);
 /** @} */
 
 #endif /* AUDIO_PLAY_OS_PORT_H */
+#endif

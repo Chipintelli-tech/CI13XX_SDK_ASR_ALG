@@ -23,7 +23,8 @@
         "alc_auto_switch.h": "c",
         "sed_manage.h": "c",
         "debug_time_consuming.h": "c",
-        "ci130x_audio_pre_rslt_out.h": "c"
+        "ci130x_audio_pre_rslt_out.h": "c",
+        "audio_play_process.h": "c"
     },
     "ci-tool.download-serial-port": "COM2",
 }

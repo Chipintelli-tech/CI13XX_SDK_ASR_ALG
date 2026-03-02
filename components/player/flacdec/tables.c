@@ -1,3 +1,5 @@
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include <inttypes.h>
 
 /* From ffmpeg - libavutil/common.h */
@@ -11,3 +13,4 @@ const uint8_t ff_log2_tab[256] = {
     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
 };
+#endif

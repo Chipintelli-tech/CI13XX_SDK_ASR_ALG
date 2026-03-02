@@ -7,7 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _AUDIO_PLAY_PROCESS_H_
 #define _AUDIO_PLAY_PROCESS_H_
 
@@ -157,3 +158,4 @@ extern void clean_decode_sync_word_offset(void);
 /** @} */
 
 #endif /* _AUDIO_PLAY_PROCESS_H_ */
+#endif

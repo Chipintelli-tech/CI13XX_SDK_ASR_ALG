@@ -37,6 +37,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -2164,3 +2166,4 @@ void task_audio_play(void *pvParameters)
         curr_decoder_ops->destroy();
     }
 }
+#endif

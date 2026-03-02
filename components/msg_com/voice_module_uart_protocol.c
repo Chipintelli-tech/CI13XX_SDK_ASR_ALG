@@ -17,7 +17,11 @@
 #include "ci130x_spiflash.h"
 #include "ci130x_dpmu.h"
 #include "prompt_player.h"
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+#include "simple_audio_player.h"
+#else
 #include "audio_play_api.h"
+#endif
 // #include "flash_rw_process.h"
 #include "asr_api.h"
 #include "firmware_updater.h"
@@ -26,7 +30,9 @@
 #include "romlib_runtime.h"
 #include "flash_manage_outside_port.h"
 #include "baudrate_calibrate.h"
-#if USE_IR_ENABEL
+#include "user_config.h"
+#include "ci_nvdata_manage.h"
+#if USE_IR_ENABLE
 #include "ir_test_protocol.h"
 extern int eut_state;
 #endif
@@ -62,7 +68,7 @@ static SemaphoreHandle_t send_packet_mutex;
 
 static uint32_t baud_sync_req;
 
-static void vmup_port_mutex_creat(void)
+void vmup_port_mutex_creat(void)
 {
     send_packet_mutex = xSemaphoreCreateMutex();
 
@@ -432,7 +438,7 @@ void send_baudrate_sync_req(void)
 
 void vmup_communicate_init(void)
 {
-    #if USE_IR_ENABEL
+    #if USE_IR_ENABLE
     if(eut_state == 0)
     {
     	vmup_port_hw_init();
@@ -709,7 +715,7 @@ void userapp_deal_cmd(sys_msg_com_data_t *msg)
                 /*play voice*/
                 if (VMUP_MSG_DATA_PLAY_BY_SEMANTIC_ID == play_setting)
                 {
-                    #if USE_IR_ENABEL
+                    #if USE_IR_ENABLE
                         #if UART_CONTOR_SEND_IR
                             //调用接口发送红外，参数填对应的语义ID，就可像语音识别后一样发红对应指令的红外了
                             userapp_deal_com_msg_semantic_id(id);
@@ -734,15 +740,25 @@ void userapp_deal_cmd(sys_msg_com_data_t *msg)
             }
             else if (VMUP_MSG_DATA_PLAY_STOP == play_control)
             {
-                stop_play(NULL,NULL);
+			#if SIMPLE_AUDIO_PLAYER_ENABLE
+			sap_stop();
+			#else
+		    stop_play(NULL,NULL);	
+			#endif
             }
             else if (VMUP_MSG_DATA_PLAY_PAUSE == play_control)
             {
-                pause_play(NULL,NULL);
+            #if SIMPLE_AUDIO_PLAYER_ENABLE
+			sap_stop();
+			#else
+			pause_play(NULL,NULL);
+			#endif
             }
             else if(VMUP_MSG_DATA_PLAY_RESUME == play_control)
             {
+                 #if !SIMPLE_AUDIO_PLAYER_ENABLE
                 continue_history_play(NULL);
+                #endif
             }
             break;
         }
@@ -794,7 +810,9 @@ void userapp_deal_cmd(sys_msg_com_data_t *msg)
                 ver[3] = 'x';
                 break;
             case VMUP_MSG_DATA_VER_PLAYER:          // 播放器版本号
+            #if	!SIMPLE_AUDIO_PLAYER_ENABLE
                 get_audio_play_version((char*)&ver[1]);
+            #endif
                 break;
             case VMUP_MSG_DATA_VER_APP:             // 应用程序版本号
                 ver[1] = USER_VERSION_MAIN_NO;
@@ -846,6 +864,13 @@ void userapp_deal_cmd(sys_msg_com_data_t *msg)
             }
             break;
         }
+        #if CI_OTA_ENABLE
+        case VMUP_MSG_CMD_ENTER_OTA_MODE:
+            mprintf("Enter ota mode\r\n");
+            write_ota_mcu_status(OTA_STA_UPDATE);
+            dpmu_software_reset_system_config();
+            break;
+        #endif
         default:
             vmup_send_ack_common_err(msg->msg_seq,msg->msg_cmd,VMUP_MSG_ACK_ERR_NOSUPPORT);
             break;
@@ -862,7 +887,7 @@ void userapp_deal_com_msg(sys_msg_com_data_t *msg)
         case VMUP_MSG_TYPE_CMD_DOWN:
             userapp_deal_cmd(msg);
             break;
-        #if USE_IR_ENABEL
+        #if USE_IR_ENABLE
             #if (IR_TEST == 1)		
             case VMUP_MSG_TYPE_TEST:
             userapp_test_cmd(msg);
@@ -912,4 +937,16 @@ void userapp_send_com_test(void)
 
 }
 
+cinv_item_ret_t write_ota_mcu_status(uint8_t status)
+{
+    ota_nv_status_t ota_nv_status;
+    ota_nv_status.status = status;
+    ota_nv_status.ota_chip_type_1306 = OTA_CHIP_TYPE;
+    ota_nv_status.timeout = OTA_TIMOUT;
+    ota_nv_status.retry_time = OTA_RETRY_TIME;
+    ota_nv_status.log_uart_number = CONFIG_CI_LOG_UART;
+    ota_nv_status.ota_uart_number = UART_PROTOCOL_NUMBER;
+    ota_nv_status.ota_uart_baud = UART_PROTOCOL_BAUDRATE;
+	return cinv_item_write(NVDATA_ID_OTA_MCU_STATUS, sizeof(ota_nv_status_t), &ota_nv_status);
+}
 #endif //(UART_PROTOCOL_VER == 2)

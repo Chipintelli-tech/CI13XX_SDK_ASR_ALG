@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "adpcm.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include "ci130x_system.h"
 #include "romlib_runtime.h"
 
@@ -212,3 +213,4 @@ void set_adpcm_decode_predsample(int32_t decode_predsample)
 {
     Decodepredsample = decode_predsample;
 }
+#endif

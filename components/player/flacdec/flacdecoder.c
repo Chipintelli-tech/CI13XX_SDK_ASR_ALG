@@ -30,7 +30,8 @@
  * 34-byte streaminfo structure through avctx->extradata[_size] followed
  * by data starting with the 0xFFF8 marker.
  */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include <inttypes.h>
 #include <stdbool.h>
 
@@ -671,7 +672,7 @@ int flac_decode_frame16(FLACContext *fc, uint8_t *buf, int buf_size, int16_t *wa
 }
 
 
-
+#endif
 
 
 

@@ -97,6 +97,13 @@ typedef enum
     EM_STATUS_NUM,
 } status_id_t;
 
+
+//bnpu异常类型
+typedef enum
+{
+    BNPU_AUDIO_DEAL_SLOW = 0x01,    //音频处理太慢，需要增大AUDIO_IN_BUFFER_NUM
+}bnpu_err_type_t;
+
 typedef enum
 {
     CI_SS_VAD_IDLE = 0,    //VAD状态检测为非人声

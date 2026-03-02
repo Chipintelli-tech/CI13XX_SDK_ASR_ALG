@@ -7,6 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _ADPCMDEC_H_
 #define _ADPCMDEC_H_
 
@@ -15,3 +17,4 @@ void de_codeadpcm_mono_to_stereo(char* src,unsigned int size,short* dst);
 void de_codeadpcm_mono_to_mono(char* src,unsigned int size,short* dst);
 
 #endif /* _ADPCMDEC_H_ */
+#endif

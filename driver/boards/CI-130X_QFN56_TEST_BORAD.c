@@ -2,13 +2,17 @@
 #include "ci130x_gpio.h"
 #include "ci130x_dpmu.h"
 #include "ci130x_iis.h"
-#include "audio_play_process.h"
 #include "sdk_default_config.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "ci130x_codec.h"
 #include "codec_manager.h"
-
+#include "user_config.h"
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+#include "simple_audio_player.h"
+#else
+#include "audio_play_process.h"
+#endif
 int g_pa_pin_valid_level;        //记录功放使能控制引脚的有效电平   1: 高电平，0: 低电平
 
 
@@ -414,13 +418,21 @@ const cm_codec_hw_info_t host_mic_hw_info =
  * @brief 播音配置参数表
  *
  */
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+cm_sound_info_t audio_format_info = 
+{
+    .sample_rate = 16000,
+    .channel_flag = 2,
+    .sample_depth = IIS_DW_16BIT,
+};
+#else
 audio_format_info_t audio_format_info = 
 {
     .samprate = 16000,
     .nChans = 2,
     .out_min_size = 1152,
 };
-
+#endif
 /**
  * @brief 录音配置参数表
  *

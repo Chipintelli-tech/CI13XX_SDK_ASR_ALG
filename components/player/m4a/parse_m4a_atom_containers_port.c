@@ -8,7 +8,8 @@
  * 
  */
 
-
+#include "user_config.h"
+ #if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -100,3 +101,4 @@ int mf_seek(mem_file_t *handle, long offset, int fromwhere)
     }
     return 0;
 }
+#endif

@@ -8,6 +8,7 @@
  * 
  */
 #include "audio_play_api.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include "audio_play_process.h"
 #include "get_play_data.h"
 #include "ci130x_system.h"
@@ -396,3 +397,4 @@ uint32_t get_data_load_offset(void)
     return 0;
     #endif
 }
+#endif

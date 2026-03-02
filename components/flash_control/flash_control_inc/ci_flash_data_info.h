@@ -17,7 +17,7 @@
 #include <stdbool.h>
 #include "ci130x_uart.h"
 #include "sdk_default_config.h"
-
+#include "user_config.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

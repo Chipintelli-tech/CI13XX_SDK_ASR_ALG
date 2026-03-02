@@ -10,8 +10,12 @@
 #include "ci130x_spiflash.h"
 #include "ci130x_gpio.h"
 #include "ci130x_dma.h"
+#if !SIMPLE_AUDIO_PLAYER_ENABLE
 #include "audio_play_api.h"
 #include "audio_play_decoder.h"
+#else
+#include "simple_audio_player.h"
+#endif
 #include "ci_flash_data_info.h"
 // #include "ci130x_audio_capture.h"
 #include "board.h"
@@ -33,7 +37,6 @@
 #include "voice_print_recognition.h"
 #include "cwsl_manage.h"
 #include "codec_manager.h"
-#include "cias_audio_data_handle.h"
 #include "ota_partition_verify.h"
 #include "doa_app_handle.h"
 #include "codec_manage_outside_port.h"

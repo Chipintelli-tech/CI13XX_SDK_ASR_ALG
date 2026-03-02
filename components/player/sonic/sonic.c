@@ -5,7 +5,8 @@
 
    This file is licensed under the Apache 2.0 license.
 */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include "sonic.h"
 
 #include <limits.h>
@@ -1195,3 +1196,4 @@ int sonicChangeShortSpeed(short* samples, int numSamples, float speed,
   sonicDestroyStream(stream);
   return numSamples;
 }
+#endif

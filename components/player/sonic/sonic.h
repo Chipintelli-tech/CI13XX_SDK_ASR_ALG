@@ -50,7 +50,8 @@ similar to high speed factors is used.
 /* Uncomment this to use sin-wav based overlap add which in theory can improve
    sound quality slightly, at the expense of lots of floating point math. */
 /* #define SONIC_USE_SIN */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -226,4 +227,5 @@ void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram,
 
 #ifdef __cplusplus
 }
+#endif
 #endif

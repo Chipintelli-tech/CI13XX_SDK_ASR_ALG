@@ -7,7 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
-
+#include "user_config.h"
+ #if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -526,4 +527,5 @@ int main(int argc,char** argv)
 
     return 0;
 }
+#endif
 #endif

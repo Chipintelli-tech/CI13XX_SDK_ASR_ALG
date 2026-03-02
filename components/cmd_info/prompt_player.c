@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include "command_file_reader.h"
 #include "command_info.h"
-#include "audio_play_api.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
@@ -23,10 +22,14 @@
 #include "ci_flash_data_info.h"
 #include "asr_api.h"
 #include "timers.h"
+#include "user_config.h"
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+#include "simple_audio_player.h"
+#else
+#include "audio_play_api.h"
+#endif
 
-
-typedef 
-struct voice_play_info_st
+typedef struct voice_play_info_st
 {
     cmd_handle_t cmd_handle;
     uint16_t start_index;
@@ -35,8 +38,7 @@ struct voice_play_info_st
     play_done_callback_t play_done_callback;    //!播放结束的回调函数;
 }voice_play_info_t;
 
-typedef 
-struct prompt_player_st
+typedef struct prompt_player_st
 {
     FunctionalState enabled_flag;               //!提示音播报是否使能
     QueueHandle_t play_queue;                   //!播放队列
@@ -155,7 +157,11 @@ static int prompt_play_inner(voice_play_info_t *p_voice_play_info, bool from_cal
             #else
             audio_play_hw_pa_da_ctl(ENABLE,false);
             #endif
+			#if SIMPLE_AUDIO_PLAYER_ENABLE
+			sap_play(prompt_player.combination_list[prompt_player.combination_index++], combination_callback);
+			#else
             pause_audio_play_prompt(prompt_player.combination_list[prompt_player.combination_index++], 1, combination_callback);
+			#endif
         }
         else
         {
@@ -263,6 +269,7 @@ static void combination_callback(int32_t play_cb_state)
         xSemaphoreTake(prompt_player.semaphore, portMAX_DELAY);
     }
 
+#if !SIMPLE_AUDIO_PLAYER_ENABLE
     if (AUDIO_PLAY_CB_STATE_PLAY_THRESHOLD == play_cb_state &&
         (prompt_player.combination_index >= prompt_player.combination_number))
     {
@@ -272,11 +279,14 @@ static void combination_callback(int32_t play_cb_state)
         }
         return;
     }
-
+#endif
     if ((prompt_player.combination_index >= prompt_player.combination_number) 
+            || (play_cb_state < 0)
+#if !SIMPLE_AUDIO_PLAYER_ENABLE
             || (AUDIO_PLAY_CB_STATE_PAUSE_BEFORE_THRESHOLD == play_cb_state)
             || (AUDIO_PLAY_CB_STATE_PAUSE_AFTER_THRESHOLD == play_cb_state)
-            || (play_cb_state < 0))
+#endif
+        )
     {
         //调用上一个播报音的结束回调
         BaseType_t rst = xQueueReceive(prompt_player.play_queue, &voice_play_info, 0);
@@ -291,7 +301,11 @@ static void combination_callback(int32_t play_cb_state)
         
         //播放下一个顺序播报音
         rst = xQueuePeek(prompt_player.play_queue, &voice_play_info, 0);
+#if SIMPLE_AUDIO_PLAYER_ENABLE       
+        if (pdTRUE == rst && (play_cb_state == 0))
+#else
         if (pdTRUE == rst && (play_cb_state == AUDIO_PLAY_CB_STATE_DONE))
+#endif
         {
             if (prompt_play_inner(&voice_play_info, true) != 0)
             {
@@ -312,10 +326,18 @@ static void combination_callback(int32_t play_cb_state)
             #endif
         }
     }
+#if SIMPLE_AUDIO_PLAYER_ENABLE   
+    else if (prompt_player.combination_index < prompt_player.combination_number && play_cb_state == 0)
+#else
     else if (prompt_player.combination_index < prompt_player.combination_number && play_cb_state == AUDIO_PLAY_CB_STATE_DONE)
+#endif
     {
-        //播放下一个组合播报音
-        pause_audio_play_prompt(prompt_player.combination_list[prompt_player.combination_index++], 1, combination_callback);
+		//播放下一个组合播报音
+		#if SIMPLE_AUDIO_PLAYER_ENABLE
+		sap_play(prompt_player.combination_list[prompt_player.combination_index++], combination_callback);
+		#else
+		pause_audio_play_prompt(prompt_player.combination_list[prompt_player.combination_index++], 1, combination_callback);
+		#endif
     }
 
     if (prompt_player.semaphore)
@@ -413,18 +435,36 @@ uint32_t prompt_play_by_cmd_handle(
 
     if (prompt_player.combination_number > 0 && preemptive)     //当前是否正在播报,需要打断
     {
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+        sap_stop();
+#else
         pause_play(NULL,NULL);
+#endif
         int timeout = 2000;        //2秒
         if (prompt_player.semaphore)
         {
             xSemaphoreGive(prompt_player.semaphore);
         }
+        #if SIMPLE_AUDIO_PLAYER_ENABLE
+        int cnt = 0; 
         while(prompt_player.combination_number > 0 && timeout > 0)
         {
-            pause_play(NULL,NULL);
+            cnt++;
+			if(cnt % 20 == 0)
+            {
+                sap_stop();
+            }
+            vTaskDelay(pdMS_TO_TICKS(2));
+            timeout--;
+        }
+        #else
+        while(prompt_player.combination_number > 0 && timeout > 0)
+        {
+			pause_play(NULL,NULL);
             vTaskDelay(1);
             timeout--;
         }
+        #endif
         if (prompt_player.semaphore)
         {
             xSemaphoreTake(prompt_player.semaphore, portMAX_DELAY);
@@ -549,11 +589,15 @@ uint32_t prompt_play_by_multi_cmd_id(prompt_play_info_t *p_play_info, int number
     voice_play_info_t voice_play_info;
     if (prompt_player.combination_number > 0)     //当前是否正在播报,需要打断
     {
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+        sap_stop();
+#else
         if (RETURN_ERR == pause_play(NULL,NULL))
         {
             vTaskDelay(1);
             pause_play(NULL,NULL);
         }
+#endif
         if (prompt_player.semaphore)
         {
             xSemaphoreGive(prompt_player.semaphore);
@@ -567,7 +611,9 @@ uint32_t prompt_play_by_multi_cmd_id(prompt_play_info_t *p_play_info, int number
         }
         if (prompt_player.semaphore)
         {
-            xSemaphoreTake(prompt_player.semaphore, portMAX_DELAY); } }
+            xSemaphoreTake(prompt_player.semaphore, portMAX_DELAY);
+        }
+    }
     voice_play_info.cmd_handle = 0;
     voice_play_info.select_index = 0;
     voice_play_info.play_done_callback = play_done_callback;    
@@ -611,7 +657,12 @@ uint32_t prompt_play_by_multi_cmd_id(prompt_play_info_t *p_play_info, int number
     #else
     pause_asr(1, 1);
     #endif
+	#if SIMPLE_AUDIO_PLAYER_ENABLE
+	sap_play(prompt_player.combination_list[prompt_player.combination_index++], combination_callback);
+	#else
     pause_audio_play_prompt(prompt_player.combination_list[prompt_player.combination_index++], 1, combination_callback);
+	#endif
+
 
     if (prompt_player.semaphore)
     {
@@ -637,7 +688,11 @@ uint32_t prompt_is_playing()
 uint32_t prompt_stop_play()
 {
     voice_play_info_t voice_play_info;
+	#if SIMPLE_AUDIO_PLAYER_ENABLE
+	sap_stop();
+	#else
     stop_play(NULL,NULL);
+	#endif
     int timeout = 2000;
     while(prompt_player.combination_number > 0 && timeout > 0)
     {

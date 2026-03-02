@@ -30,7 +30,7 @@
 const iis_out_audio_config_t iis_out_audio_config =
 {
 	.alg_enable = true,
-	.iis_out_enable = USE_IIS1_OUT_PRE_RSLT_AUDIO,			 //用于采音。
+	.iis_out_enable = USE_IIS1_OUT_PRE_RSLT_AUDIO || RECORD_PLAY_BY_FLASH_ENABLE,			 //用于采音。
     .uart_out_enable = USE_UART_SEND_PRE_RSLT_AUDIO,         //用于uart采音。
 	.iis_left_channel = MICL,		 //左通道输出音频。MICL、MICR、REFL、REFR、DST1、DST2
 	.iis_right_channel = DST1,		 //右通道输出音频。MICL、MICR、REFL、REFR、DST1、DST2
@@ -190,8 +190,8 @@ const aec_config_t aec_config =
 	.nlp_flag = 2,
 	.aggr_mode = 1,
 	.fft_size = 256,	   //频域处理频点数
-	.alc_off_codec_adc_gain_mic = 20, 
-    .alc_off_codec_adc_gain_ref = 0
+	.alc_off_codec_adc_gain_mic = 20,    //主mic左通道pga增益
+    .alc_off_codec_adc_gain_ref = 0      //主mic右通道(参考信号)
 };
 
 
@@ -206,16 +206,16 @@ ci_ssp_config_t ci_ssp = {
 
 	.stft = 			{.module_config = &stft_istft_config},
 
-	#if USE_AEC_MODULE
-	.aec = 				{.module_config = &aec_config},
-	#else
-	.aec = 				{.module_config = NULL},
-	#endif
-
 	#if USE_AI_DOA
 	.doa = 				{.module_config = &doa_nn_config},
 	#else
 	.doa = 				{.module_config = NULL},
+	#endif
+
+	#if USE_AEC_MODULE
+	 .aec = 				{.module_config = &aec_config},
+	#else
+	.aec = 				{.module_config = NULL},
 	#endif
 
 	#if USE_DEREVERB_MODULE

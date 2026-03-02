@@ -16,8 +16,12 @@
 #include "ci130x_spiflash.h"
 #include "ci130x_gpio.h"
 #include "ci130x_dma.h"
+#if !SIMPLE_AUDIO_PLAYER_ENABLE
 #include "audio_play_api.h"
 #include "audio_play_decoder.h"
+#else
+#include "simple_audio_player.h"
+#endif
 #include "ci_flash_data_info.h"
 // #include "ci130x_audio_capture.h"
 #include "board.h"
@@ -40,13 +44,13 @@
 #include "voice_print_recognition.h"
 #include "cwsl_manage.h"
 #include "codec_manager.h"
-#include "cias_audio_data_handle.h"
 #include "ota_partition_verify.h"
 #include "doa_app_handle.h"
 #include "codec_manage_outside_port.h"
 #include "code_switch.h"
 #include "ci_nlp_user.h"
 #include "ci_nlp.h"
+#include "cias_record_demo.h"
 /**
  * @brief 硬件初始化
  *          这个函数主要用于系统上电后初始化硬件寄存器到初始值，配置中断向量表初始化芯片io配置时钟
@@ -139,6 +143,7 @@ static void welcome(void)
                SDK_TYPE,
                SDK_VERSION,SDK_SUBVERSION,SDK_REVISION);
     ci_loginfo(LOG_USER,"\033[1;32mWelcome to CI130x_SDK.\033[0;39m\r\n");
+    
     extern char heap_start;
     extern char heap_end;
     ci_loginfo(LOG_USER,"Heap size:%dKB\n", (((uint32_t)&heap_end) - ((uint32_t)&heap_start))/1024);
@@ -294,7 +299,7 @@ static void task_init(void *p_arg)
     flash_manage_nuclear_com_outside_port_init();
     codec_manage_inner_port_init();
     ciss_init();
-    ciss_set(CI_SS_AUDIO_IN_BUFFER_NUM, AUDIO_IN_BUFFER_NUM);  //2M模型，buffer至少设置为20
+    ciss_set(CI_SS_AUDIO_IN_BUFFER_NUM, AUDIO_IN_BUFFER_NUM);
     ciss_set(CI_SS_DECODER_MIN_ACTIVE,DECODER_MIN_ACTIVE);
     ciss_set(CI_SS_INTENT_NUM, MULT_INTENT);
     ciss_set(CI_SS_HOST_PARAM_SET_OK, 0x5A);  //参数设置完成
@@ -308,10 +313,6 @@ static void task_init(void *p_arg)
     ciss_set(CI_SS_DECODER_BEAM,*(uint32_t*)&beam);
 
 	mailboxboot_sync();
-
-    #if CI_OTA_ENABLE    //如果使能ota, 检测ota是否升级完成,防止上次升级失败无法重启
-    check_ota_finish();
-    #endif
 	#if USE_AEC_MODULE&&USE_AI_DOA
     ciss_set(CI_SS_AEC_WORK_STATE, 0);
     ciss_set(CI_SS_DOA_WORK_STATE, 1);
@@ -331,9 +332,9 @@ static void task_init(void *p_arg)
     #if USE_DUAL_MIC_ANY
     ciss_set(CI_SS_DUALMIC_IS_ANY,true);
     ciss_set(CI_SS_ANY_MIC_AEC_PCM_THR_VAL, 100);
-    cm_set_codec_adc_gain(HOST_MIC_RECORD_CODEC_ID, CM_CHA_LEFT,  DISABLE);   //禁用alc，设置固定增益为20
+    cm_set_codec_alc(HOST_MIC_RECORD_CODEC_ID, CM_CHA_LEFT,  DISABLE);   //禁用alc，设置固定增益为20
     cm_set_codec_adc_gain(HOST_MIC_RECORD_CODEC_ID, CM_CHA_LEFT, 20);
-    cm_set_codec_adc_gain(HOST_MIC_RECORD_CODEC_ID, CM_CHA_RIGHT,  DISABLE);
+    cm_set_codec_alc(HOST_MIC_RECORD_CODEC_ID, CM_CHA_RIGHT,  DISABLE);
     cm_set_codec_adc_gain(HOST_MIC_RECORD_CODEC_ID, CM_CHA_RIGHT, 20);
     #else
     ciss_set(CI_SS_DUALMIC_IS_ANY,false);
@@ -372,10 +373,16 @@ static void task_init(void *p_arg)
     extern void decoder_task_init_port(void);
     decoder_task_init_port();
     #endif
-    xTaskCreate(audio_in_manage_inner_task, "audio_in_manage_inner_task", 300, NULL, 4, NULL); 
+    xTaskCreate(audio_in_manage_inner_task, "audio_in_manage_inner_task", 300, NULL, 4, NULL);
     #if AUDIO_PLAYER_ENABLE
     /* 播放器任务 */
+    #if SIMPLE_AUDIO_PLAYER_ENABLE
+    sap_init();
+    #else
+    #if !USE_TTS
     audio_play_init();
+    #endif
+    #endif
     #endif
     alg_model_init();     //初始化算法模型
     #if USE_AI_DOA
@@ -391,17 +398,22 @@ static void task_init(void *p_arg)
     #if (VOICE_UPLOAD_BY_UART || VOICE_PLAY_BY_UART)
     cias_audio_data_transmission();
     #endif
-    #if (MULT_INTENT > 1)
     if (nlp_module_init() != NLP_STATE_OK) //nlp模块初始化
     {
         mprintf("nlp module init error...\r\n");
-        return NLP_ERR_COMMON;
+        return;
     }
+    #if (MULT_INTENT > 1)
 	nlp_msg_initial();
 	xTaskCreate(nlpTaskManageProcess,"nlpTaskManageProcess",480,NULL,4,NULL);
-
 	#endif
-
+    #if RECORD_PLAY_BY_FLASH_ENABLE
+    if(!record_play_test_init())  //录音播放初始化失败
+    {
+        mprintf("record_play_test_init init error...\r\n");
+        return;  
+    }
+    #endif
 
     /*user app初始化*/
     userapp_initial();

@@ -156,7 +156,7 @@ void vad_result_close_file(void)
 *******************************************************************************/
 int vadstart_callback(unsigned int *pdata, int line)
 {
-#if USE_AI_DOA
+#if 0//USE_AI_DOA
     doa_nn_param_t *pdoa_param = get_ci_ai_doa_param();
     pdoa_param->vad_end_flag = 0;
     pdoa_param->vad_start_flag = 1;

@@ -2,13 +2,17 @@
 #include "ci130x_gpio.h"
 #include "ci130x_dpmu.h"
 #include "ci130x_iis.h"
-#include "audio_play_process.h"
 #include "sdk_default_config.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "ci130x_codec.h"
 #include "codec_manager.h"
-
+#include "user_config.h"
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+#include "simple_audio_player.h"
+#else
+#include "audio_play_process.h"
+#endif
 #if (CI_CHIP_TYPE != 1302)
 #error "CI_CHIP_TYPE error,请在"user_config.h"中使用正确的芯片型号定义"CI_CHIP_TYPE"宏。\n"
 #endif
@@ -418,12 +422,22 @@ const cm_codec_hw_info_t host_mic_hw_info =
  * @brief 播音配置参数表
  *
  */
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+cm_sound_info_t audio_format_info = 
+{
+    .sample_rate = 16000,
+    .channel_flag = 2,
+    .sample_depth = IIS_DW_16BIT,
+};
+#else
 audio_format_info_t audio_format_info = 
 {
     .samprate = 16000,
     .nChans = 2,
     .out_min_size = 1152,
 };
+#endif
+
 
 /**
  * @brief 录音配置参数表
@@ -538,7 +552,7 @@ void audio_pre_rslt_out_codec_init(void)
     #if USE_DENOISE_NN || USE_AI_DOA   //前端计算太慢，需要加大play buffer
     pcm_buffer_info.play_buffer_info.buffer_num = AUDIO_IN_BUFFER_NUM + 6;
     #else
-    pcm_buffer_info.play_buffer_info.buffer_num = 4;
+    pcm_buffer_info.play_buffer_info.buffer_num = 6;
     #endif
     pcm_buffer_info.play_buffer_info.block_size = block_size;
     pcm_buffer_info.play_buffer_info.buffer_size = pcm_buffer_info.play_buffer_info.block_size * pcm_buffer_info.play_buffer_info.block_num;
@@ -548,4 +562,39 @@ void audio_pre_rslt_out_codec_init(void)
     //配置IIS放音音频格式
     
     cm_config_codec(PLAY_PRE_AUDIO_CODEC_ID, CODEC_OUTPUT, &pre_rslt_out_sound_info);
+}
+
+
+void audio_pre_rslt_out_codec_init_pa_out(void)
+{
+    static uint8_t *pa_out_codec_buf = NULL; 
+    mprintf("==audio_pre_rslt_out_codec_init_pa_out call\r\n");
+    uint16_t block_size = AUDIO_CAP_POINT_NUM_PER_FRM * 2 * sizeof(int16_t);
+
+    // cm_reg_codec(PLAY_CODEC_ID, (cm_codec_hw_info_t*)&audio_pre_tslt_out_info);
+
+    cm_pcm_buffer_info_t pcm_buffer_info;
+    pcm_buffer_info.play_buffer_info.block_num = 1;
+    #if USE_DENOISE_NN || USE_AI_DOA   //前端计算太慢，需要加大play buffer
+    pcm_buffer_info.play_buffer_info.buffer_num = AUDIO_IN_BUFFER_NUM + 6;
+    #else
+    pcm_buffer_info.play_buffer_info.buffer_num = 6;
+    #endif
+    pcm_buffer_info.play_buffer_info.block_size = block_size;
+    pcm_buffer_info.play_buffer_info.buffer_size = pcm_buffer_info.play_buffer_info.block_size * pcm_buffer_info.play_buffer_info.block_num;
+    if(!pa_out_codec_buf)
+    {
+        pa_out_codec_buf  = pvPortMalloc(pcm_buffer_info.play_buffer_info.buffer_size * pcm_buffer_info.play_buffer_info.buffer_num);
+        if(!pa_out_codec_buf)
+        {
+            mprintf("pa_out_codec_buf malloc error \r\n");
+            return;
+        }
+    }
+    pcm_buffer_info.play_buffer_info.pcm_buffer = pa_out_codec_buf;
+    CI_ASSERT(pcm_buffer_info.play_buffer_info.pcm_buffer,"\n");
+    cm_config_pcm_buffer(PLAY_CODEC_ID, CODEC_OUTPUT, &pcm_buffer_info);
+    //配置IIS放音音频格式
+    
+    cm_config_codec(PLAY_CODEC_ID, CODEC_OUTPUT, &pre_rslt_out_sound_info);
 }

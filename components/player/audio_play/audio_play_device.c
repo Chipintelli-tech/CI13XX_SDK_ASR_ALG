@@ -7,6 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include "audio_play_device.h"
 #include "audio_play_api.h"
 #include "audio_play_process.h"
@@ -162,8 +164,10 @@ void audio_play_hw_start(FunctionalState pa_cmd, audio_format_info_t *audio_form
     sound_info.channel_flag = (audio_format_info->nChans == 2) ? 3:1;
     sound_info.sample_depth = IIS_DW_16BIT;
 
-    
+    #if RECORD_PLAY_BY_FLASH_ENABLE
+    #else
     if((pre_sample_rate != audio_format_info->samprate) || (pre_nChans != audio_format_info->nChans))
+    #endif
     {
         pre_sample_rate = sound_info.sample_rate;
         pre_nChans = audio_format_info->nChans;
@@ -299,4 +303,5 @@ void audio_play_hw_fix_pop_issue_soft_done(void)
 {
     audio_play_card_set_pause_flag(AUDIO_PLAY_CARD_PAUSE_NULL);
 }   
+#endif
 #endif

@@ -131,8 +131,8 @@ int asr_result_callback(callback_asr_result_type_t *asr)
             {
                 if (CI_SS_PLAY_STATE_PLAYING != ciss_get(CI_SS_PLAY_STATE))
                 {
-                    mprintf("--asr->voice_start_frame = %d\r\n", asr->voice_start_frame);
-                    mprintf("asr->vocie_valid_frame_len = %d\r\n", asr->vocie_valid_frame_len);
+                    //mprintf("--asr->voice_start_frame = %d\r\n", asr->voice_start_frame);
+                    //mprintf("asr->vocie_valid_frame_len = %d\r\n", asr->vocie_valid_frame_len);
                     ciss_set(CI_SS_WAKE_UP_START_INDEX_FOR_DOA,  asr->voice_start_frame);
                     ciss_set(CI_SS_WAKE_UP_VALID_FRAME_LEN_FOR_DOA,  asr->vocie_valid_frame_len);
                     ciss_set(CI_SS_ALG_DOA_IS_BUSYING, 1);

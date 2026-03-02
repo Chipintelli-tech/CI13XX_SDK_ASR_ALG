@@ -7,7 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef CI_VOICE_HEAD_H_
 #define CI_VOICE_HEAD_H_
 
@@ -131,3 +132,4 @@ typedef union
 }ci_voice_head_t;
 
 #endif /* CI_VOICE_HEAD_H_ */
+#endif

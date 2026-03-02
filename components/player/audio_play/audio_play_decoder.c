@@ -7,8 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
-
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include "audio_play_decoder.h"
 #include "ci130x_system.h"
 #include "ci_log.h"
@@ -1175,3 +1175,4 @@ audio_play_decoder_ops_t aac_decoder =
     .next_ops = NULL,
 };
 
+#endif

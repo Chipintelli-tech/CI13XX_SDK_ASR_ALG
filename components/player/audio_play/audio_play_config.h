@@ -1,3 +1,5 @@
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _AUDIO_PLAY_CONFIG_H_
 #define _AUDIO_PLAY_CONFIG_H_
 
@@ -31,3 +33,4 @@
 #define AUDIO_PLAYER_THRESHOLD_DATA_SIZE     (3200-576)
 
 #endif /* _AUDIO_PLAY_CONFIG_H_ */
+#endif

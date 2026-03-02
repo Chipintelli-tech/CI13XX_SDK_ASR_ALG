@@ -51,7 +51,7 @@ uint16_t ota_crc_func(uint16_t crc,uint8_t * buf,uint32_t len)
     return crc;
 }
 
-static char read_buf_for_crc[4096];
+/* static char read_buf_for_crc[4096];
 uint16_t get_partition_crc(uint32_t partition_addr, uint32_t partition_size)
 {
     uint16_t crc = 0;
@@ -66,8 +66,9 @@ uint16_t get_partition_crc(uint32_t partition_addr, uint32_t partition_size)
     }
     return crc;
 }
-
+ */
 //检测升级是是否完成
+#if 0
 int check_ota_finish(void)
 {
     partition_table_t partition_table;
@@ -135,3 +136,4 @@ int check_ota_finish(void)
         }
     }
 }
+#endif

@@ -1,5 +1,0 @@
-Name: "src"
-
-Src:
-    - bitwise.c
-    - framing.c

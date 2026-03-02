@@ -2,7 +2,8 @@
  * @file bitstream.h
  * bitstream api header.
  */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef BITSTREAMF_H
 #define BITSTREAMF_H
 
@@ -290,3 +291,4 @@ __STATIC_INLINE void init_get_bits(GetBitContext *s, const uint8_t *buffer, int 
 void align_get_bits(GetBitContext *s);
 
 #endif /* BITSTREAM_H */
+#endif

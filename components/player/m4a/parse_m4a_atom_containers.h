@@ -7,6 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
+#include "user_config.h"
+ #if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _PARSE_M4A_ATOM_CONTAINERS_H_
 #define _PARSE_M4A_ATOM_CONTAINERS_H_
 
@@ -101,3 +103,4 @@ int collectMediaData(mem_file_t *fp,m4a_file_info_t* m4a_file_info, uint32_t par
 #endif
 
 #endif /* _PARSE_M4A_ATOM_CONTAINERS_H_ */
+#endif

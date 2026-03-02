@@ -42,7 +42,8 @@
  *
  * aacstatname.h - name mangling macros for static linking
  **************************************************************************************/
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _STATNAME_H
 #define _STATNAME_H
 
@@ -117,3 +118,4 @@
  */
 
 #endif /* _STATNAME_H */
+#endif

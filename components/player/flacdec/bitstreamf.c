@@ -24,7 +24,8 @@
  * @file bitstream.c
  * bitstream api.
  */
-
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -63,3 +64,4 @@ void align_get_bits(GetBitContext *s)
     if(n) skip_bits(s, n);
 }
 
+#endif

@@ -7,6 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _AUDIO_PLAY_API_H_
 #define _AUDIO_PLAY_API_H_
 
@@ -82,3 +84,4 @@ void set_curr_outside_v2_handle(audio_play_os_queue_t outside_msg, audio_play_os
 /** @} */
 
 #endif /* _AUDIO_PLAY_API_H_ */
+#endif

@@ -15,7 +15,11 @@
 #include "ci130x_dma.h"
 #include "debug_time_consuming.h"
 #include "stream_buffer.h"
-
+#include "ci130x_audio_pre_rslt_out.h"
+#include "user_config.h"
+#if RECORD_PLAY_BY_FLASH_ENABLE
+#include "cias_record_demo.h"
+#endif
 #define BUFFER_NUM (4)
 typedef struct
 {
@@ -54,6 +58,10 @@ void uart_record_task(void *p_arg)
             }
             vTaskDelay(pdMS_TO_TICKS(15));
         }
+        else
+        {
+            vTaskDelay(pdMS_TO_TICKS(3));
+        }
     }
 }
 void uart_send_voice_init(void)
@@ -61,7 +69,14 @@ void uart_send_voice_init(void)
     UARTDMAConfig((UART_TypeDef *)USE_UART_SEND_PRE_RSLT_AUDIO_NUMBER, USE_UART_SEND_PRE_RSLT_AUDIO_BAUD);
     extern StreamBufferHandle_t gUartRecordStreamBuffer;
     gUartRecordStreamBuffer = xStreamBufferCreate(1024 * 10, 1);
-    xTaskCreate(uart_record_task, "uart_record_task", 1024, NULL, 4, NULL);
+    if(gUartRecordStreamBuffer)
+    {
+        xTaskCreate(uart_record_task, "uart_record_task", 1024, NULL, 4, NULL);
+    }
+    else
+    {
+        mprintf("uart record init error\r\n");
+    }
 }
 #endif
 
@@ -129,7 +144,7 @@ void audio_pre_rslt_out_play_card_init(void)
     sg_init_tmp_str.write_data_cnt = 0;
     sg_init_tmp_str.send_data_cnt = 0;
 
-#if USE_IIS1_OUT_PRE_RSLT_AUDIO || USE_HP_OUT_PRE_RSLT_AUDIO || USE_UART_SEND_PRE_RSLT_AUDIO
+#if USE_IIS1_OUT_PRE_RSLT_AUDIO || USE_HP_OUT_PRE_RSLT_AUDIO || USE_UART_SEND_PRE_RSLT_AUDIO || RECORD_PLAY_BY_FLASH_ENABLE
 #if USE_UART_SEND_PRE_RSLT_AUDIO
     uart_send_voice_init();
     tmp_voice_addr = pvPortMalloc(block_size);
@@ -139,7 +154,7 @@ void audio_pre_rslt_out_play_card_init(void)
     audio_pre_rslt_out_codec_init();
 #endif
 
-#if USE_HP_OUT_PRE_RSLT_AUDIO
+#if USE_HP_OUT_PRE_RSLT_AUDIO || RECORD_PLAY_BY_FLASH_ENABLE
     audio_pre_rslt_out_codec_init_pa_out();
 #endif
 #endif
@@ -163,9 +178,28 @@ void convert_left_and_right(bool r)
  */
 void audio_pre_rslt_write_data(int16_t *left, int16_t *right)
 {
-
     uint32_t block_size = sg_init_tmp_str.init_str.block_size;
-
+    static uint8_t adpcm_dst_data_buf[128] = {0};
+#if RECORD_PLAY_BY_FLASH_ENABLE
+    extern RecordPlayTestTypedef gRecordPlayTest;
+    if (gRecordPlayTest.record_work_state == RECORD_STATE_START)
+    {
+        // gRecordPlayTest.record_work_state = RECORD_STATE_RUNING;
+        extern RecordPlayTestTypedef gRecordPlayTest;
+        if (gRecordPlayTest.record_stream_buffer)
+        {
+            memset(adpcm_dst_data_buf, 0, 128);
+            pcm_convert_to_adpcm(left, 512/2,  adpcm_dst_data_buf);
+            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+            int ret = xStreamBufferSendFromISR(gRecordPlayTest.record_stream_buffer, (int8_t *)adpcm_dst_data_buf, 128, &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+            if (ret != 128)
+            {
+                mprintf("xSpeexRecordStreamBuffer send error, send len = %d\r\n", ret);
+            }
+        }
+    }
+#endif
 #if USE_IIS1_OUT_PRE_RSLT_AUDIO || USE_HP_OUT_PRE_RSLT_AUDIO || USE_UART_SEND_PRE_RSLT_AUDIO
 #if USE_UART_SEND_PRE_RSLT_AUDIO
     int16_t *pcm_data_p = (int16_t *)tmp_voice_addr;

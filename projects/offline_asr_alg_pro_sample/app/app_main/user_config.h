@@ -12,7 +12,7 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #define USE_CI_D12GS01J_BOARD       0   //CI-D0XGS01J，端子模块，芯片型号必须设置为1312JE
 #define USE_CI_D06GT01D_BOARD       1   //CI-D06GT01D，开发版，芯片型号必须设置为1306
 #define USE_CI_E12GS02J_BOARD       0   //CI-E12GS02J，开发版，芯片型号必须设置为231x
-#define USE_CUS_D06GS09S_BOARD      0   //CI_D06GS09S,开发板，型号必须为设置1306-仅配置支持双mic 算法+AEC，其他配置不支持
+#define USE_CI_D06GT01J_BOARD       0   //CI_D06GT01J,开发板，型号必须为设置1306-仅配置支持双mic 算法+AEC，其他配置不支持
 #define USE_CUS_XXXXXXX_BOARD       0   //用户自定义
 
 #if (USE_CI_D02GS01J_BOARD == 1)
@@ -31,9 +31,9 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #define CI_CHIP_TYPE                2312    //flash:2MB,SSOP16
 #define BOARD_PORT_FILE             "CI-E12GS02J.c"
 #define USE_BLE                     1
-#elif (USE_CUS_D06GS09S_BOARD == 1)
+#elif (USE_CI_D06GT01J_BOARD == 1)
 #define CI_CHIP_TYPE                1306    //flash:4MB,QFN40 双mipc算法+外部codec 7243e用该板级
-#define BOARD_PORT_FILE             "CI-D06GS09S_V1.0.c"
+#define BOARD_PORT_FILE             "CI-D06GT01J.c"
 #elif (USE_CUS_XXXXXXX_BOARD == 1)
 #define CI_CHIP_TYPE                xxxx    //flash:4MB,QFN40
 #define BOARD_PORT_FILE             "CI-XXXX.c"
@@ -53,6 +53,13 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #define USE_UART_SEND_PRE_RSLT_AUDIO_NUMBER   (UART_TypeDef*)(HAL_UART1_BASE)   //用哪个UART口将算法处理后的音频数据送出
 #define USE_UART_SEND_PRE_RSLT_AUDIO_BAUD         UART_BaudRate921600           //串口采音波特率
 #define USE_UART_SEND_PRE_RSLT_RECORD_LEFT            0                         //1-采集左通道数据 0-采集右通道数据   (串口采样无法同时采集左右通道数据)
+//录音+flash存储+播放测试
+#define RECORD_PLAY_BY_FLASH_ENABLE                   0                         //录音播放demo-仅提供参考代码，可以根据录音需求修改cias_record_demo.c
+#if RECORD_PLAY_BY_FLASH_ENABLE
+#define RECORD_SAVE_FLASH_START_ADDR                  0X300000                 //录音flash存储起始地址-3M-用户根据自己芯片大小调整
+#define RECORD_SAVE_FLASH_SIZE                        1024*512                 //录音flash存储大小-128KB
+#endif 
+
 //**通讯串口配置
 #define CONFIG_CI_LOG_UART             HAL_UART0_BASE  //配置log输出使用的串口，请勿与protocol共用同一个串口
 
@@ -78,14 +85,18 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #define UART1_PAD_OPENDRAIN_MODE_EN     1   //0,UART1为推挽模式。1,UART1为开漏模式。
 #define UART2_PAD_OPENDRAIN_MODE_EN     0   //0,UART2为推挽模式。1,UART2为开漏模式。
 
-//**OTA配置
-#define CI_OTA_ENABLE                (0)                 //开启OTA功能，需修改打包升级工具版本，在firmware\config.ini文件中设置成firmware_version=FW_V1，升级与被升级固件均要FW_V1版本工具打包生成
-#define CI_OTA_UART_NUMBER           (1)                 //uart0:0  uart1:1  uart2:2 ,引脚需使板级配置文件中复用配置为该UART的引脚 \
-                                                         (注意:bootloader中: uart1-(1306使用PB7和PC0, 其他型号使用PA2和PA3) \
-                                                                            uart2-(1306使用PB1和PB2, 其他型号使用PA5和PA6)  \
-                                                                            请严格按照上面管脚设计，否则会出现管脚不对应无法和 \
-                                                                            bootloadr握手成功)
-#define CI_OTA_UART_BAUD          (UART_BaudRate115200) //同bootloader握手波特率
+/* OTA使能配置
+开启OTA功能，需修改打包升级工具版本，并在firmware\config.ini文件中设置成firmware_version=FW_V4，
+升级与被升级固件均要FW_V4版本工具打包生成 */
+#define CI_OTA_ENABLE               0 
+#define OTA_TIMOUT                  3 //和MCU端交互数据超时时间，单位秒
+#define OTA_RETRY_TIME              10//和MCU端交互数据重复发送次数
+#if (CI_CHIP_TYPE == 1306)
+#define OTA_CHIP_TYPE               0x06
+#else
+#define OTA_CHIP_TYPE               0x02
+#endif    
+
 //**时钟源配置
 #if ((CI_CHIP_TYPE == 1312) || (CI_CHIP_TYPE == 1311))
 #define USE_EXTERNAL_CRYSTAL_OSC        0
@@ -102,9 +113,9 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #endif
 
 //*红外功能配置
-#define USE_IR_ENABEL                   0       //红外功能，1:是 0:否。开启红外功能在使用打包工具升级固件时，请取消勾选“升级完成自动运行”，防止重复烧录\
+#define USE_IR_ENABLE                   0       //红外功能，1:是 0:否。开启红外功能在使用打包工具升级固件时，请取消勾选“升级完成自动运行”，防止重复烧录\
                                                   红外功能涉及多模型切换和红外码库，firmware文件请参考external\firmware参考\ir(红外)\firmware
-#if USE_IR_ENABEL
+#if USE_IR_ENABLE
 #define UART_CONTOR_SEND_IR             0       //用通信口进行串口协议控制发红外
 #define IR_TEST	                        0       //用通信口进行串口协议的产检
 #ifndef USE_NIGHT_LIGHT
@@ -282,8 +293,8 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 
 #if USE_AEC_MODULE && (USE_BEAMFORMING_MODULE  || USE_AI_DOA || USE_DEREVERB_MODULE || USE_DUAL_MIC_ANY)  //双mic + aec算法必须外部挂codec作为信号回采(推荐7243e)
 #define IF_USE_ANOTHER_CODEC_TO_GET_REF 1
-#if USE_CUS_D06GS09S_BOARD != 1   //必须外挂codec使用USE_CUS_D06GS09S_BOARD板级
-#error "dual mic alg + aec , must use USE_CUS_D06GS09S_BOARD board\n"
+#if USE_CI_D06GT01J_BOARD != 1   //必须外挂codec使用USE_CI_D06GT01J_BOARD板级
+#error "dual mic alg + aec , must use USE_CI_D06GT01J_BOARD board\n"
 #endif
 #endif
 #if USE_BEAMFORMING_MODULE && USE_PWK
@@ -330,7 +341,7 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 
 
 //单麦就近唤醒 和 红外不能与多意图同时使用
-#if USE_PWK || USE_IR_ENABEL
+#if USE_PWK || USE_IR_ENABLE
 #if MULT_INTENT > 1
  #error "pwk and ir, can't be toghter mult intent\n"
 #endif
@@ -346,8 +357,14 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #error "MSG_COM_USE_UART_EN and CLOUD_UART_PROTOCOL_EN, can't be toghter\n"
 #endif
 //开启红外功能必须用二代协议
-#if USE_IR_ENABEL && (UART_PROTOCOL_VER != 2)
+#if USE_IR_ENABLE && (UART_PROTOCOL_VER != 2)
 #error "use ir function, UART_PROTOCOL_VER must set 2!\n"
+#endif
+
+#if USE_TTS
+#if SIMPLE_AUDIO_PLAYER_ENABLE
+#error "use TTS, SIMPLE_AUDIO_PLAYER_ENABLE MUSET SET 0!\n"
+#endif
 #endif
 
 //BLE相关协议

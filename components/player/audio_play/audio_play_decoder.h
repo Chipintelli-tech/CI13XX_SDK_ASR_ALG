@@ -7,6 +7,8 @@
  * @copyright Copyright (c) 2019 Chipintelli Technology Co., Ltd.
  * 
  */
+#include "user_config.h"
+#if	!SIMPLE_AUDIO_PLAYER_ENABLE
 #ifndef _AUDIO_PLAY_DECODER_H_
 #define _AUDIO_PLAY_DECODER_H_
 
@@ -97,3 +99,4 @@ extern void registe_decoder_ops(audio_play_decoder_ops_t *registe_ops);
 /** @} */
 
 #endif /* _AUDIO_PLAY_DECODER_H_ */
+#endif

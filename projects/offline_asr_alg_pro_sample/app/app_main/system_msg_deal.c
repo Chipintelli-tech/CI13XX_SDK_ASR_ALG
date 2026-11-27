@@ -323,7 +323,7 @@ void exit_down_freq_mode_cb(TimerHandle_t xTimer)
         if(( 0 == asrtop_sys_isbusy())&&(AUDIO_PLAY_STATE_IDLE == get_audio_play_state()))
         {
             pause_asr(0, 1);
-            #if (USE_DENOISE_MODULE)
+            #if (USE_TRA_DENOISE)
             power_mode_switch(POWER_MODE_DOWN_FREQUENCY);
             #else
             power_mode_switch(POWER_MODE_OSC_FREQUENCY);
@@ -380,7 +380,6 @@ void change_asr_wakeup_word(void)
     dynmic_confidence_en_cfg(0);
     #endif
     #if DEEP_SEPARATE_ENABLE && !BF_DEEPSE_MODE 
-    mprintf("set CI_SS_CMD_ASR_CHA_NUM 2\n");
     ciss_set(CI_SS_CMD_ASR_CHA_NUM, 2);      
     #endif
     #if USE_SEPARATE_WAKEUP_EN
@@ -404,7 +403,7 @@ void change_asr_wakeup_word(void)
     // 晶振时钟模式，可以产生VAD START，不能识别需要在VAD START中断内切换到正常模式才可以识别
     pause_asr(0, 1);
 
-    #if (USE_DENOISE_MODULE)
+    #if (USE_TRA_DENOISE)
     power_mode_switch(POWER_MODE_DOWN_FREQUENCY);
     #else
     power_mode_switch(POWER_MODE_OSC_FREQUENCY);
@@ -431,7 +430,6 @@ void change_asr_normal_word(void)
     asr_dynamic_skip_open();
     #endif
     #if DEEP_SEPARATE_ENABLE && !BF_DEEPSE_MODE 
-    mprintf("set CI_SS_CMD_ASR_CHA_NUM 1\n");
     ciss_set(CI_SS_CMD_ASR_CHA_NUM,1);
     #endif
     #if USE_SEPARATE_WAKEUP_EN
@@ -1211,23 +1209,43 @@ void UserTaskManageProcess(void *p_arg)
     }
 }
 
-#if USE_PWK
-void ci_pwk_get_cb(int db_val)
+//bnpu参数配置
+void bnpu_dnn_param_cfg(void)
 {
-	mprintf("--------pwk db val: %ddb\n", db_val);
-}
-#endif
-
-//暂时未启用
-void  ci_bnpu_err_print(int bnpu_err_type)
-{
-	mprintf("bnpu err_type = %d\r\n", bnpu_err_type);
-	switch(bnpu_err_type)
-	{
-		case 0x01:
-			mprintf("audio deal too slow\r\n");
-			break;
-        default:
-            break;
+     //获取模型ASR地址
+    ciss_set(CI_SS_DNN_MODEL_FLASH_ADDR1, 0x0);
+    ciss_set(CI_SS_DNN_MODEL_FLASH_ADDR2, 0x0);
+    ciss_set(CI_SS_DNN_MODEL_FLASH_ADDR3, 0x0);
+    ciss_set(CI_SS_DNN_MODEL_FLASH_ADDR4, 0x0);
+    ciss_set(CI_SS_DNN_MODEL_FLASH_ADDR5, 0x0);
+    //解析模型，分配dnn内存
+    for(int i = 0;  i <= DNN_NUM_CHECK_MAX; i++)
+	{	
+		void* addr = NULL;
+		uint32_t size = 0;
+		get_dnn_addr_by_id((uint16_t)i, &addr, &size);
+		if(addr)
+		{
+			addr = (void*)((int8_t*)addr + FLASH_CPU_READ_BASE_ADDR);
+		}
+        switch(i)
+        {
+            case 0:
+                ciss_set(CI_SS_DNN_MODEL_FLASH_ADDR1, addr);
+                break;
+            case 1:
+                ciss_set(CI_SS_DNN_MODEL_FLASH_ADDR2, addr);
+                break;
+            case 2:
+                ciss_set(CI_SS_DNN_MODEL_FLASH_ADDR3, addr);
+                break;
+            case 3:
+                ciss_set(CI_SS_DNN_MODEL_FLASH_ADDR4, addr);
+                break;
+            case 4:
+                ciss_set(CI_SS_DNN_MODEL_FLASH_ADDR5, addr);
+                break;
+        }
 	}
 }
+

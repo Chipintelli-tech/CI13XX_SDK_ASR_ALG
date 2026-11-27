@@ -23,6 +23,7 @@
 #include "audio_play_api.h"
 #endif
 // #include "flash_rw_process.h"
+#include "ci_flash_data_info.h"
 #include "asr_api.h"
 #include "firmware_updater.h"
 #include <string.h>
@@ -228,7 +229,6 @@ static uint16_t length0 = 0, length1 = 0;
 static uint16_t chk_sum0 = 0, chk_sum1 = 0;
 static uint16_t data_rev_count = 0;
 
-
 void vmup_receive_packet(uint8_t receive_char)
 {
     if(true == vmup_port_timeout_one_packet())
@@ -357,7 +357,6 @@ void vmup_receive_packet(uint8_t receive_char)
             rev_state = REV_STATE_HEAD0;
             break;
     }
-    
 }
 
 
@@ -819,6 +818,15 @@ void userapp_deal_cmd(sys_msg_com_data_t *msg)
                 ver[2] = USER_VERSION_SUB_NO;
                 ver[3] = 0;
                 break;
+            case VMUP_MSG_DATA_VER_SOFT:
+            {
+                product_version_t fw_version;
+                get_fw_version(&fw_version);
+                ver[1] = (fw_version.soft_ware_version >> 16) & 0xff;
+                ver[2] = (fw_version.soft_ware_version >> 8) & 0xff;
+                ver[3] = fw_version.soft_ware_version & 0xff;
+                break;
+            }
             default:
 			break;
             }
@@ -867,7 +875,8 @@ void userapp_deal_cmd(sys_msg_com_data_t *msg)
         #if CI_OTA_ENABLE
         case VMUP_MSG_CMD_ENTER_OTA_MODE:
             mprintf("Enter ota mode\r\n");
-            write_ota_mcu_status(OTA_STA_UPDATE);
+            write_ota_mcu_status(5);//5 进入OTA
+            vTaskDelay(pdMS_TO_TICKS(50));
             dpmu_software_reset_system_config();
             break;
         #endif
@@ -939,14 +948,7 @@ void userapp_send_com_test(void)
 
 cinv_item_ret_t write_ota_mcu_status(uint8_t status)
 {
-    ota_nv_status_t ota_nv_status;
-    ota_nv_status.status = status;
-    ota_nv_status.ota_chip_type_1306 = OTA_CHIP_TYPE;
-    ota_nv_status.timeout = OTA_TIMOUT;
-    ota_nv_status.retry_time = OTA_RETRY_TIME;
-    ota_nv_status.log_uart_number = CONFIG_CI_LOG_UART;
-    ota_nv_status.ota_uart_number = UART_PROTOCOL_NUMBER;
-    ota_nv_status.ota_uart_baud = UART_PROTOCOL_BAUDRATE;
-	return cinv_item_write(NVDATA_ID_OTA_MCU_STATUS, sizeof(ota_nv_status_t), &ota_nv_status);
+    uint8_t flag = status;
+	return cinv_item_write(NVDATA_ID_OTA_MCU_STATUS, sizeof(uint8_t), &flag);
 }
 #endif //(UART_PROTOCOL_VER == 2)

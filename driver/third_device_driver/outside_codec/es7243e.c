@@ -366,7 +366,7 @@ void es7243e_init(bool is_linein)
     memset((void*)&alc_cfg_str,0,sizeof(es7243e_alc_config_t));
     if(is_linein)
     {
-        alc_cfg_str.max_gain = 2.0f;
+        alc_cfg_str.max_gain = 14.0f;
     }
     else
     {

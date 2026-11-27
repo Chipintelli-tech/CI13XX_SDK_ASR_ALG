@@ -555,7 +555,7 @@ void audio_pre_rslt_out_codec_init(void)
 
     cm_pcm_buffer_info_t pcm_buffer_info;
     pcm_buffer_info.play_buffer_info.block_num = 1;
-    #if USE_DENOISE_NN || USE_AI_DOA   //前端计算太慢，需要加大play buffer
+    #if USE_NN_DENOISE || USE_NN_DOA   //前端计算太慢，需要加大play buffer
     pcm_buffer_info.play_buffer_info.buffer_num = AUDIO_IN_BUFFER_NUM + 6;
     #else
     pcm_buffer_info.play_buffer_info.buffer_num = 6;
@@ -581,7 +581,7 @@ void audio_pre_rslt_out_codec_init_pa_out(void)
 
     cm_pcm_buffer_info_t pcm_buffer_info;
     pcm_buffer_info.play_buffer_info.block_num = 1;
-    #if USE_DENOISE_NN || USE_AI_DOA   //前端计算太慢，需要加大play buffer
+    #if USE_NN_DENOISE || USE_NN_DOA  || USE_GCC_DOA   //前端计算太慢，需要加大play buffer
     pcm_buffer_info.play_buffer_info.buffer_num = AUDIO_IN_BUFFER_NUM + 6;
     #else
     pcm_buffer_info.play_buffer_info.buffer_num = 6;

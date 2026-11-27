@@ -1,6 +1,5 @@
 #include "doa_app_handle.h"
 
-#if USE_AI_DOA
 int g_current_doa_angle = 0;
 int g_doa_out_result_flag = 0;   //doa输出角度信息标志
 #if CLOUD_UART_PROTOCOL_EN
@@ -10,7 +9,7 @@ void ci_doa_get_cb(int audio_state, int doa_angle)
 {
 
         g_current_doa_angle = m_doa_angle;
-		mprintf("--------doa angle: %d°\n", doa_angle);
+		mprintf("===doa angle: %d°\n", doa_angle);
         for(int i = 0; i < DOA_STATE_MAX; i++)
         {
             if(gDOACloudCmdProtocol[i].doa_angle_id == g_current_doa_angle/10)
@@ -33,7 +32,10 @@ void ci_doa_get_cb(int audio_state, int doa_angle)
 {
     g_doa_out_result_flag = 1;
     g_current_doa_angle = doa_angle;
-	mprintf("--------doa angle: %d°\n", doa_angle);
+
+    #if !GCC_DOA_OUT_TYPE
+    mprintf("===doa angle: %d°\n", doa_angle);
+    #endif
 }
 #endif
 int ci_get_doa_angle(void)
@@ -53,5 +55,3 @@ void doa_out_result_hand_task(void *p)
         vTaskDelay(50);
     }
 }
-
-#endif

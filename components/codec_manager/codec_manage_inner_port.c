@@ -6,14 +6,14 @@
 #include "codec_manager.h"
 #include "ci130x_system.h"
 #include "ci130x_audio_pre_rslt_out.h"
-
+#include "status_share.h"
 #define CHECK_PARA_NUM  (0)
 
 #define CMI_CI_ASSERT(x,msg)                                                                                                    \
     if( ( x ) == 0 )                                                                                                        \
     {                                                                                                                       \
-        mprintf("%s",msg);                                                                                                   \
-        mprintf("CMI Line:%d\n",__LINE__);                                                                                   \
+        ci_logdebug(LOG_SYS_INFO, "%s",msg);                                                                                                   \
+        ci_logdebug(LOG_SYS_INFO, "CMI Line:%d\n",__LINE__);                                                                                   \
         while(1)  asm volatile ("ebreak");                                                                                  \
     }
 
@@ -22,16 +22,10 @@ uint32_t codec_manage_inner_msg_buf[CODEC_MANAGE_INNER_PORT_MAX_PARA_NUM] = {0};
 
 int32_t codec_manage_inner_serve_cb(void *payload, uint32_t payload_len, uint32_t src, void *priv)
 {
-    // if(payload_len > sizeof(codec_manage_inner_msg_buf))
-    // {
-    //     // mprintf("payload_len = %d\n",payload_len);
-    //     CMI_CI_ASSERT(0,"\n");
-    // }
-    // MASK_ROM_LIB_FUNC->newlibcfunc.memcpy_p((void*)codec_manage_inner_msg_buf,(void*)payload,payload_len);
     uint32_t* data = (uint32_t*)payload;
     
     #if THIS_MODULE_PRINT_OPEN
-    mprintf("NN I %d\n",data[0]);
+    ci_logdebug(LOG_SYS_INFO, "NN I %d\n",data[0]);
     #endif
     switch(data[0])
     {
@@ -40,15 +34,16 @@ int32_t codec_manage_inner_serve_cb(void *payload, uint32_t payload_len, uint32_
             #if CHECK_PARA_NUM
             if(12 != payload_len)
             {
-                mprintf("payload_len = %d\n",payload_len);
+                ci_logdebug(LOG_SYS_INFO, "payload_len = %d\n",payload_len);
                 CMI_CI_ASSERT(0,"\n");
             }
             #endif
             //模块内部实现
             int16_t* left = (int16_t*)data[1];
             int16_t* right = (int16_t*)data[2];
-            void audio_pre_rslt_write_data(int16_t* left,int16_t* right);
-            audio_pre_rslt_write_data(left,right);
+            uint32_t wrapfft_audio_addr = (uint32_t)data[3];
+            void audio_pre_rslt_write_data(int16_t *left, int16_t *right, uint32_t wrapfft_audio_addr);
+            audio_pre_rslt_write_data(left,right, wrapfft_audio_addr);
             break;
         }
         case cm_set_codec_adc_gain_ept_num:
@@ -56,7 +51,7 @@ int32_t codec_manage_inner_serve_cb(void *payload, uint32_t payload_len, uint32_
             #if CHECK_PARA_NUM
             if(16 != payload_len)
             {
-                mprintf("payload_len = %d\n",payload_len);
+                ci_logdebug(LOG_SYS_INFO, "payload_len = %d\n",payload_len);
                 CMI_CI_ASSERT(0,"\n");
             }
             #endif
@@ -71,7 +66,7 @@ int32_t codec_manage_inner_serve_cb(void *payload, uint32_t payload_len, uint32_
             #if CHECK_PARA_NUM
             if(16 != payload_len)
             {
-                mprintf("payload_len = %d\n",payload_len);
+                ci_logdebug(LOG_SYS_INFO, "payload_len = %d\n",payload_len);
                 CMI_CI_ASSERT(0,"\n");
             }
             #endif
@@ -81,12 +76,22 @@ int32_t codec_manage_inner_serve_cb(void *payload, uint32_t payload_len, uint32_
             cm_set_codec_alc(codec_index,cha,alc_enable);
             break;
         }
+        case cm_get_codec_alc_state_ept_num:
+        {
+             int codec_index = (int)data[1];
+            if((bool)cm_get_codec_alc_state(codec_index, CM_CHA_LEFT)
+            || (bool)cm_get_codec_alc_state(codec_index, CM_CHA_RIGHT))
+                ciss_set(CI_SS_AEC_ALC_STATE,CI_SS_AEC_ALC_OPENED_TO_CLOSE);
+            else
+                ciss_set(CI_SS_AEC_ALC_STATE,CI_SS_AEC_ALC_CLOSED);
+            break;
+        }
         case cinn_malloc_in_host_sram_ept_num:
         {
             #if CHECK_PARA_NUM
             if(12 != payload_len)
             {
-                mprintf("payload_len = %d\n",payload_len);
+                ci_logdebug(LOG_SYS_INFO, "payload_len = %d\n",payload_len);
                 CMI_CI_ASSERT(0,"\n");
             }
             #endif
@@ -103,7 +108,7 @@ int32_t codec_manage_inner_serve_cb(void *payload, uint32_t payload_len, uint32_
             #if CHECK_PARA_NUM
             if(8 != payload_len)
             {
-                mprintf("payload_len = %d\n",payload_len);
+                ci_logdebug(LOG_SYS_INFO, "payload_len = %d\n",payload_len);
                 CMI_CI_ASSERT(0,"\n");
             }
             #endif

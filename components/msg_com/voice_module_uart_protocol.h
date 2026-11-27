@@ -105,7 +105,7 @@ typedef struct
 #define VMUP_MSG_DATA_VER_PREPROCESS (0x83)         // 语音预处理算法版本号
 #define VMUP_MSG_DATA_VER_PLAYER     (0x84)         // 播放器版本号
 #define VMUP_MSG_DATA_VER_APP        (0x8A)         // 应用程序版本号
-
+#define VMUP_MSG_DATA_VER_SOFT       (0x8B)         // 打包工具添加的软件版本号
 
 /*msg_data  msg_cmd:VMUP_MSG_CMD_NOTIFY_STATUS*/
 #define VMUP_MSG_DATA_NOTIFY_POWERON     (0xB0)

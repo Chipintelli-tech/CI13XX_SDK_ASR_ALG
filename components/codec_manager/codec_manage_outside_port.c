@@ -109,14 +109,22 @@ int cm_set_codec_adc_gain(int codec_index, cm_cha_sel_t cha, int gain)
     codec_manage_ept_cal_serve((char*)para,sizeof(para));
 }
 
-
-
-void audio_pre_rslt_write_data(int16_t* left,int16_t* right)
+int cm_get_codec_alc_state_npu(int codec_index)
 {
-    uint32_t para[3];
+    uint32_t para[2];
+    para[0] = cm_get_codec_alc_state_ept_num;
+    para[1] = (uint32_t)codec_index;
+    codec_manage_ept_cal_serve((char*)para,sizeof(para));
+}
+
+
+void audio_pre_rslt_write_data(int16_t* left,int16_t* right, uint32_t wrapfft_audio_addr )
+{
+    uint32_t para[4];
     para[0] = audio_pre_rslt_write_data_ept_num;
     para[1] = (uint32_t)left;
     para[2] = (uint32_t)right;
+    para[3] = (uint32_t)wrapfft_audio_addr;
     codec_manage_ept_cal_serve((char*)para,sizeof(para));
 }
 

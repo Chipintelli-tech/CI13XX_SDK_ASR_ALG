@@ -20,7 +20,6 @@
 #include "asr_process_callback_decoder.h"
 #include "system_msg_deal.h"
 #include "status_share.h"
-// #include "voiceprint_port.h"
 
 #include "ci_nlp.h"
 #include "ci_log.h"
@@ -63,11 +62,10 @@ int send_asr_pre_confirm_msg(uint32_t cmd_handle)
 {
     return 0;
 }
-
-/* #if !USE_CWSL
-void get_cwsl_threshold(unsigned char *wakeup_threshold,unsigned char *cmdword_threshold )
-{}
-#endif */ 
+int set_post_min_cnt()
+{
+    return POST_MIN_CNT;
+}
 
 int asr_result_callback(callback_asr_result_type_t *asr)
 {
@@ -117,22 +115,14 @@ int asr_result_callback(callback_asr_result_type_t *asr)
             }
         #endif
     #endif
-        #if USE_PWK
-        //mprintf("--asr->voice_start_frame = %d\r\n", asr->voice_start_frame);
-        //mprintf("--asr->vocie_valid_frame_len = %d\r\n", asr->vocie_valid_frame_len);
-        ciss_set(CI_SS_WAKE_UP_START_INDEX_FOR_PWK,  asr->voice_start_frame);
-        ciss_set(CI_SS_WAKE_UP_VALID_FRAME_LEN_FOR_PWK,  asr->vocie_valid_frame_len);
-        #endif
         #if (MULT_INTENT < 2)    
-            #if USE_AI_DOA&&USE_AEC_MODULE   //必须放在发系统消息之前，
+            #if (USE_NN_DOA)&&USE_AEC_MODULE   //必须放在发系统消息之前，
             #if USE_CWSL
             if (!ciss_get(CI_SS_CWSL_IN_REG))  //学习状态不进行doa流程
             #endif
             {
                 if (CI_SS_PLAY_STATE_PLAYING != ciss_get(CI_SS_PLAY_STATE))
                 {
-                    //mprintf("--asr->voice_start_frame = %d\r\n", asr->voice_start_frame);
-                    //mprintf("asr->vocie_valid_frame_len = %d\r\n", asr->vocie_valid_frame_len);
                     ciss_set(CI_SS_WAKE_UP_START_INDEX_FOR_DOA,  asr->voice_start_frame);
                     ciss_set(CI_SS_WAKE_UP_VALID_FRAME_LEN_FOR_DOA,  asr->vocie_valid_frame_len);
                     ciss_set(CI_SS_ALG_DOA_IS_BUSYING, 1);
@@ -150,7 +140,7 @@ int asr_result_callback(callback_asr_result_type_t *asr)
                     }
                 }
             }
-            #elif USE_AI_DOA
+            #elif USE_NN_DOA
             // mprintf("asr->voice_start_frame = %d\r\n", asr->voice_start_frame);
             // mprintf("asr->vocie_valid_frame_len = %d\r\n", asr->vocie_valid_frame_len);
             #if USE_CWSL
@@ -161,6 +151,11 @@ int asr_result_callback(callback_asr_result_type_t *asr)
                     ciss_set(CI_SS_WAKE_UP_VALID_FRAME_LEN_FOR_DOA,  asr->vocie_valid_frame_len);
                 }
             #endif
+        #endif
+        #if GCC_DOA_OUT_TYPE
+        extern int ci_get_doa_angle(void);
+        int angle = ci_get_doa_angle();
+        mprintf("===doa angle: %d°\n", angle);
         #endif
         #if (MULT_INTENT < 2)
         mprintf("send result:%s %d\n", asr->cmd_word, asr->confidence);
@@ -176,10 +171,7 @@ int asr_result_callback(callback_asr_result_type_t *asr)
         send_msg_to_sys_task(&send_msg, NULL);
         ret = 1;
         #else
-        //mprintf("decoded_frames=%d \n", asr->frm);
-        //mprintf("*************sil=%d******** \n", asr->sil_cfd);
-        //mprintf("nlp asr->voice_start_frame = %d\r\n", asr->voice_start_frame);
-       // mprintf("nlp asr->vocie_valid_frame_len = %d\r\n", asr->vocie_valid_frame_len);
+
         ret = asr_result_callback_nlp(asr->cmd_word, asr->confidence, asr->frm, asr->sil_cfd, asr->path_node_cfd, asr->voice_start_frame, asr->vocie_valid_frame_len);
         
         #endif
@@ -195,7 +187,6 @@ int asr_result_callback(callback_asr_result_type_t *asr)
 
 int asr_lite_result_callback(char * words,short cfd)
 {
-    //mprintf("out2 :%s %d\n",words,cfd);
     /*add code for app*/
     
     return 0;

@@ -71,13 +71,7 @@
                      define
 ****************************************************************************/
 #define READBUF_SIZE            (576U) 
-
-#if ON_LINE_SUPPORT
-#define MAX_OUTPUTBUFF_SIZE     (4608U)
-#else
 #define MAX_OUTPUTBUFF_SIZE     (1152U)
-#endif
-
 #define MIN_OUTPUTBUFF_SIZE     (576U)
 #define PCM_BUF_COUNT           (4)
 #define MIN_VALID_DATA_SIZE     (20U)

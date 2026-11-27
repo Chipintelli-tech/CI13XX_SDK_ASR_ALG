@@ -361,10 +361,6 @@ void GPIO_IRQ_Default_proc(gpio_base_t base, int gpio_port_index)
 		if(gpio_get_irq_mask_status_single(base,(0x1<<i)))
 		{
 			gpio_clear_irq_single(base,(0x1<<i));
-#ifdef CIAS_BLE_CONNECT_MODE_ENABLE
-			extern void rf_irq_handle(gpio_base_t base, int gpio_port_index);
-            rf_irq_handle(base, i);
-#endif
 			//ci_loginfo(LOG_GPIO_DRIVER,"GPIO%d Pin%d IRQ\n", gpio_port_index, i);
 		}
 	}

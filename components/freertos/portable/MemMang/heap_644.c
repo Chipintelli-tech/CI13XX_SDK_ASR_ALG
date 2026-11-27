@@ -129,8 +129,9 @@ static volatile uint32_t malloc_time = 0;
 
 void *pvPortMalloc_644( size_t xWantedSize )
 {
-BlockLink_t *pxBlock, *pxPreviousBlock, *pxNewBlockLink;
-void *pvReturn = NULL;
+
+	BlockLink_t *pxBlock, *pxPreviousBlock, *pxNewBlockLink;
+	void *pvReturn = NULL;
 
 	vTaskSuspendAll();
 	#if CHECK_MALLOC_IS_OVER_WRITE

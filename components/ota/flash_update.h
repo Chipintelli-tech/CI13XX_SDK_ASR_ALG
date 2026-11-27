@@ -101,7 +101,6 @@ enum BOOTLOADER_LOG_LEVEL
 #define MSG_LEN_TRY_FAST_BD_TEST            0x00    //Input size
 #define MSG_LEN_UPDATE_READ                 0x00    //Input size +4
 #define MSG_LEN_UPDATE_COMPLETE             0x01
-
 #define FILECONFIG_SPIFLASH_SIZE            (4096)
 
 #define USERCODE_MAX_SIZE                   (1024*448)

@@ -147,16 +147,6 @@ int on_cwsl_init(cwsl_init_parameter_t *cwsl_init_parameter)
     cwsl_init_parameter->reg_2times_flow_v2 = FOR_REG_2TIMES_FLOW_V2 ;
 
 	#if FOR_REG_2TIMES_FLOW_V2
-		// if(CWSL_REG_TIMES < 2)
-		// {
-		// 	cwsl_init_parameter->sg_reg_times = 2;
-		// 	mprintf("CWSL_REG_TIMES %d must be 2 or 3\n",CWSL_REG_TIMES);
-		// }
-		// else if(CWSL_REG_TIMES > 3)
-		// {
-		// 	cwsl_init_parameter->sg_reg_times = 3;
-		// 	mprintf("CWSL_REG_TIMES %d must be 2 or 3\n",CWSL_REG_TIMES);
-		// }
         #if (CWSL_REG_TIMES < 2)
         #error "CWSL_REG_TIMES error,CWSL_REG_TIMES must be 2 or 3。\n"
         #endif

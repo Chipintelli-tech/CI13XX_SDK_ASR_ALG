@@ -1,18 +1,40 @@
-# .gitattributes 自身
+# 配置文件自身
 .gitattributes text eol=lf
+.gitignore text eol=lf
 
-# Windows批处理，必须CRLF
+# Windows批处理，必须CRLF，双击才能跑
 *.bat text eol=crlf
+*.vbs text eol=crlf
 
-# shell脚本
+# shell脚本，LF
 *.sh text eol=lf
 
-# 各类文本统一仓库存LF
+# C/C++源码、汇编、头文件
+*.c text eol=lf
+*.h text eol=lf
+*.cpp text eol=lf
+*.S text eol=lf
+
+# 链接脚本、make、mk、lua构建脚本
+*.lds text eol=lf
+*.mk text eol=lf
+Makefile text eol=lf
+makefile text eol=lf
+*.lua text eol=lf
+
+# 文档、配置
+*.md text eol=lf
 *.txt text eol=lf
 *.ini text eol=lf
-*.fst.txt text eol=lf
+*.yml text eol=lf
+*.html text eol=lf
 
-# 二进制，git add . 时禁止任何换行转换
+# vscode工程配置
+.vscode/settings.json text eol=lf
+.vscode/tasks.json text eol=lf
+
+# 二进制模型/固件，禁止任何换行转换
 *.bin binary
 *.dat binary
 *.model binary
+*.fst.txt text eol=lf

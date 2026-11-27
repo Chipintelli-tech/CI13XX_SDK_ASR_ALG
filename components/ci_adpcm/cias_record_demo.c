@@ -18,22 +18,22 @@ void record_to_flash_task(void)
         int stream_aviable_len = xStreamBufferBytesAvailable(gRecordPlayTest.record_stream_buffer);
         if (stream_aviable_len > 128)
         {
-            //mprintf("stream_aviable_len = %d\r\n", stream_aviable_len);
+            //ci_logdebug(LOG_SYS_INFO, "stream_aviable_len = %d\r\n", stream_aviable_len);
             int rx_size = xStreamBufferReceive(gRecordPlayTest.record_stream_buffer, adpcm_dst_data_buf, 128, portMAX_DELAY);
             if (rx_size != 128)
             {
-                mprintf("record_stream_buffer rcv error\r\n");
+                ci_logdebug(LOG_SYS_INFO, "record_stream_buffer rcv error\r\n");
             }
             else
             {
                 if (gRecordPlayTest.record_cur_offset <= RECORD_SAVE_FLASH_SIZE)
                 {
                    // pcm_convert_to_adpcm(upload_src_data_buf, 512/2,  adpcm_dst_data_buf);
-                    mprintf(".");
-                   // mprintf("gRecordPlayTest.record_cur_offset = %x\r\n", gRecordPlayTest.record_cur_offset);
+                    ci_logdebug(LOG_SYS_INFO, ".");
+                   // ci_logdebug(LOG_SYS_INFO, "gRecordPlayTest.record_cur_offset = %x\r\n", gRecordPlayTest.record_cur_offset);
                     if (RETURN_OK != post_write_flash((uint8_t *)adpcm_dst_data_buf, RECORD_SAVE_FLASH_START_ADDR + gRecordPlayTest.record_cur_offset, 128))
                     {
-                        mprintf("record: write flash error\r\n");
+                        ci_logdebug(LOG_SYS_INFO, "record: write flash error\r\n");
                     }
                     else
                     {
@@ -42,7 +42,7 @@ void record_to_flash_task(void)
                 }
                 else
                 {
-                    mprintf("record over, record_cur_offset = %d\r\n", gRecordPlayTest.record_cur_offset);
+                    ci_logdebug(LOG_SYS_INFO, "record over, record_cur_offset = %d\r\n", gRecordPlayTest.record_cur_offset);
                     gRecordPlayTest.record_work_state == RECORD_STATE_IDLE;
                 }
             }
@@ -81,8 +81,8 @@ void play_from_flash_task(void)
                 {
                     memset(pcm_play_buf, 0, 512);
                     memset(adpcm_play_buf, 0, 512/4);
-                    mprintf("=");
-                    //mprintf("gRecordPlayTest.play_cur_offset = %x\r\n", gRecordPlayTest.play_cur_offset);
+                    ci_logdebug(LOG_SYS_INFO, "=");
+                    //ci_logdebug(LOG_SYS_INFO, "gRecordPlayTest.play_cur_offset = %x\r\n", gRecordPlayTest.play_cur_offset);
                     post_read_flash((int8_t *)adpcm_play_buf, RECORD_SAVE_FLASH_START_ADDR + gRecordPlayTest.play_cur_offset, 512/4);
                     adpcm_convert_to_pcm(adpcm_play_buf, 512/4, (short *)pcm_play_buf);
                     int8_t *pcm_data_p_cpy = (int8_t *)write_pcm_addr_cpy;
@@ -96,12 +96,12 @@ void play_from_flash_task(void)
                 }
                 else
                 {
-                    mprintf("get pcm buf error\r\n");
+                    ci_logdebug(LOG_SYS_INFO, "get pcm buf error\r\n");
                 }
             }
             else
             {
-                mprintf("play over, play_cur_offset = %d\r\n", gRecordPlayTest.play_cur_offset);
+                ci_logdebug(LOG_SYS_INFO, "play over, play_cur_offset = %d\r\n", gRecordPlayTest.play_cur_offset);
                 gRecordPlayTest.play_work_state = PLAY_STATE_IDLE;
             }
             break;
@@ -116,7 +116,7 @@ bool record_play_test_init(void)
     gRecordPlayTest.record_stream_buffer = xStreamBufferCreate(128 * 50, 128);
     if (gRecordPlayTest.record_stream_buffer == NULL)
     {
-        mprintf("error %s  %d\n", __func__, __LINE__);
+        ci_logdebug(LOG_SYS_INFO, "error %s  %d\n", __func__, __LINE__);
         // 处理错误情况
         return false;
     }
@@ -135,7 +135,7 @@ void record_play_test_start(void)
         {
             if(ciss_get(CI_SS_PLAY_STATE) == CI_SS_PLAY_STATE_PLAYING)
             {
-                mprintf("wait paly over\r\n");
+                ci_logdebug(LOG_SYS_INFO, "wait paly over\r\n");
                 vTaskDelay(500);
             }
             else
@@ -143,14 +143,14 @@ void record_play_test_start(void)
                 break;
             }
         }
-        mprintf("===start record\r\n");
+        ci_logdebug(LOG_SYS_INFO, "===start record\r\n");
         gRecordPlayTest.record_work_state = RECORD_STATE_START;
         vTaskDelay(10000); // 录音10S后播放
         test_count++;
     }
     if(test_count == 2)
     {
-        mprintf("===start play\r\n");
+        ci_logdebug(LOG_SYS_INFO, "===start play\r\n");
         gRecordPlayTest.play_work_state = PLAY_STATE_START;
         test_count++;
     }

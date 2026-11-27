@@ -488,11 +488,8 @@ void audio_in_codec_registe()
     }
     else
     {
-        block_size = AUDIO_CAP_POINT_NUM_PER_FRM * sizeof(int16_t) * resample_block_double;
+        block_size = AUDIO_CAP_POINT_NUM_PER_FRM * sizeof(int16_t) * resample_block_double;/*单通道*/
     }
-    #if USE_SOFT_AEC_REF
-    block_size = block_size / AUDIO_CAP_DIV_NUM;
-    #endif
 
     //配置录音PCM buffer
     cm_pcm_buffer_info_t record_buffer_info_str;
@@ -503,11 +500,6 @@ void audio_in_codec_registe()
     cm_config_pcm_buffer(HOST_MIC_RECORD_CODEC_ID, CODEC_INPUT, &record_buffer_info_str);
     //配置录音音频格式
     cm_config_codec(HOST_MIC_RECORD_CODEC_ID, CODEC_INPUT, (cm_sound_info_t*)&host_mic_sound_info);
-
-    #if 0/*内部ADC探针模式*/
-    // Scu_IIS_PAD_DataConfig(PAD_IIS_DATA_FROM_CODEC_ADC);
-    // Scu_IIS_PAD_DataConfig(PAD_IIS_DATA_FROM_PDM);
-    #endif
 
     pad_config_for_power_amplifier();
 
@@ -568,7 +560,7 @@ void audio_pre_rslt_out_codec_init(void)
 
     cm_pcm_buffer_info_t pcm_buffer_info;
     pcm_buffer_info.play_buffer_info.block_num = 1;
-    #if USE_DENOISE_NN || USE_AI_DOA   //前端计算太慢，需要加大play buffer
+    #if USE_NN_DENOISE || USE_NN_DOA || USE_GCC_DOA  //前端计算太慢，需要加大play buffer
     pcm_buffer_info.play_buffer_info.buffer_num = AUDIO_IN_BUFFER_NUM + 6;
     #else
     pcm_buffer_info.play_buffer_info.buffer_num = 6;
@@ -616,8 +608,6 @@ const cm_sound_info_t ref_codec_sound_info = {
 void ref_in_codec_registe(void)
 {
     #if IF_USE_ANOTHER_CODEC_TO_GET_REF
-
-
     #if 1
     audio_pre_tslt_out_info.input_iis.IISx = IIS0;
     audio_pre_tslt_out_info.input_iis.iis_mode_sel = IIS_MASTER;
@@ -632,7 +622,6 @@ void ref_in_codec_registe(void)
     audio_pre_tslt_out_info.input_iis.rx_cha = IIS_RX_CHANNAL_RX0;
     audio_pre_tslt_out_info.input_iis.outside_mclk_fre = 0;
     audio_pre_tslt_out_info.input_iis.scklrck_out_en = IIS_SCKLRCK_OUT;
-
 
     /*还应该加入codec power up的操作*/
     cm_reg_codec(REF_RECORD_CODEC_ID, (cm_codec_hw_info_t*)&audio_pre_tslt_out_info);
@@ -663,7 +652,6 @@ void ref_in_codec_registe(void)
     cm_config_pcm_buffer(REF_RECORD_CODEC_ID, CODEC_INPUT, &record_buffer_info_str);
     //配置录音音频格式
     cm_config_codec(REF_RECORD_CODEC_ID, CODEC_INPUT, (cm_sound_info_t*)&ref_codec_sound_info);
-    
     es7243e_init(true);
 
     #endif
@@ -674,14 +662,13 @@ void ref_in_codec_registe(void)
 void audio_pre_rslt_out_codec_init_pa_out(void)
 {
     static uint8_t *pa_out_codec_buf = NULL; 
-    mprintf("==audio_pre_rslt_out_codec_init_pa_out call\r\n");
     uint16_t block_size = AUDIO_CAP_POINT_NUM_PER_FRM * 2 * sizeof(int16_t);
 
     // cm_reg_codec(PLAY_CODEC_ID, (cm_codec_hw_info_t*)&audio_pre_tslt_out_info);
 
     cm_pcm_buffer_info_t pcm_buffer_info;
     pcm_buffer_info.play_buffer_info.block_num = 1;
-    #if USE_DENOISE_NN || USE_AI_DOA   //前端计算太慢，需要加大play buffer
+    #if USE_NN_DENOISE || USE_NN_DOA || USE_GCC_DOA  //前端计算太慢，需要加大play buffer
     pcm_buffer_info.play_buffer_info.buffer_num = AUDIO_IN_BUFFER_NUM + 6;
     #else
     pcm_buffer_info.play_buffer_info.buffer_num = 6;

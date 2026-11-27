@@ -75,9 +75,10 @@ void timer0_end_count(uint8_t* flag)
     timer_get_count(TIMER0,(unsigned int*)&count);
     count = MAX_COUNT - count;
     count /= TIMER0_ONEUS_COUNT;
-    ci_logdebug(LOG_SYS_INFO,"%s once:%dus\n",flag,count);
+    // ci_logdebug(LOG_SYS_INFO,"%s once:%dus\n",flag,count);
+    mprintf("%s once:%dus\n",flag,count);
     all_count += count;
-    ci_logdebug(LOG_SYS_INFO,"%s average:%dus\n",flag,all_count/index);	
+   // ci_logdebug(LOG_SYS_INFO,"%s average:%dus\n",flag,all_count/index);	
 }
     
 static uint32_t timer0_cnt = 0;

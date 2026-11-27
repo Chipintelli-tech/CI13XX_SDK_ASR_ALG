@@ -75,7 +75,7 @@ void uart_send_voice_init(void)
     }
     else
     {
-        mprintf("uart record init error\r\n");
+        ci_logdebug(LOG_SYS_INFO, "uart record init error\r\n");
     }
 }
 #endif
@@ -95,7 +95,7 @@ void audio_pre_rslt_write_data_from_uart(uint32_t addr, uint32_t size)
     // timer0_start_count();
     if (!uart_dma_trans_done)
     {
-        // mprintf("pre voice data overflow\n");
+        // ci_logdebug(LOG_SYS_INFO, "pre voice data overflow\n");
     }
     uart_dma_trans_done = 0;
     extern void set_dma_int_callback(DMACChannelx dmachannel, dma_callback_func_ptr_t func);
@@ -161,13 +161,6 @@ void audio_pre_rslt_out_play_card_init(void)
 #endif
 }
 
-#if USE_DENOISE_NN_RTC
-static bool is_convert_left_right = false;
-void convert_left_and_right(bool r)
-{
-    is_convert_left_right = r;
-}
-#endif
 
 /**
  * @brief 写数据到发送端
@@ -176,7 +169,7 @@ void convert_left_and_right(bool r)
  * @param origin 原始数据的起始指针
  *  此函数不可用于中断
  */
-void audio_pre_rslt_write_data(int16_t *left, int16_t *right)
+void audio_pre_rslt_write_data(int16_t *left, int16_t *right, uint32_t wrapfft_audio_addr)
 {
     uint32_t block_size = sg_init_tmp_str.init_str.block_size;
     static uint8_t adpcm_dst_data_buf[128] = {0};
@@ -195,7 +188,7 @@ void audio_pre_rslt_write_data(int16_t *left, int16_t *right)
             portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             if (ret != 128)
             {
-                mprintf("xSpeexRecordStreamBuffer send error, send len = %d\r\n", ret);
+                ci_logdebug(LOG_SYS_INFO, "xSpeexRecordStreamBuffer send error, send len = %d\r\n", ret);
             }
         }
     }
@@ -229,7 +222,7 @@ void audio_pre_rslt_write_data(int16_t *left, int16_t *right)
             int ret = xStreamBufferSendFromISR(gUartRecordStreamBuffer, src_addr, block_size / 2, 15);
             if (ret != block_size / 2)
             {
-                mprintf("xSpeexRecordStreamBuffer send error, send len = %d\r\n", ret);
+                ci_logdebug(LOG_SYS_INFO, "xSpeexRecordStreamBuffer send error, send len = %d\r\n", ret);
             }
         }
     }
@@ -241,18 +234,8 @@ void audio_pre_rslt_write_data(int16_t *left, int16_t *right)
     int16_t *pcm_data_p = (int16_t *)write_pcm_addr;
     for (int i = 0; i < num; i++)
     {
-#if USE_DENOISE_NN_RTC
-        if (is_convert_left_right)
-        {
-            pcm_data_p[2 * i] = right[i];
-            pcm_data_p[2 * i + 1] = left[i];
-        }
-        else
-#endif
-        {
-            pcm_data_p[2 * i] = left[i];
-            pcm_data_p[2 * i + 1] = right[i];
-        }
+        pcm_data_p[2 * i] = left[i];
+        pcm_data_p[2 * i + 1] = right[i];
     }
     if (0 == write_pcm_addr)
     {
@@ -267,18 +250,8 @@ void audio_pre_rslt_write_data(int16_t *left, int16_t *right)
     int16_t *pcm_data_p_cpy = (int16_t *)write_pcm_addr_cpy;
     for (int i = 0; i < num; i++)
     {
-#if USE_DENOISE_NN_RTC
-        if (is_convert_left_right)
-        {
-            pcm_data_p_cpy[2 * i] = right[i];
-            pcm_data_p_cpy[2 * i + 1] = left[i];
-        }
-        else
-#endif
-        {
-            pcm_data_p_cpy[2 * i] = left[i];
-            pcm_data_p_cpy[2 * i + 1] = right[i];
-        }
+        pcm_data_p_cpy[2 * i] = left[i];
+        pcm_data_p_cpy[2 * i + 1] = right[i];
     }
     if (0 == write_pcm_addr_cpy)
     {

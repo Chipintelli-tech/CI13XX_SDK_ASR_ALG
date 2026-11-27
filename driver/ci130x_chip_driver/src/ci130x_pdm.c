@@ -788,7 +788,11 @@ void pdm_alc_right_config(pdm_alc_use_config_t* ALC_str)
 #define ALC_NOISE_GATE  PDM_GATE_DISABLE
 #define ALC_NOISE_GATE_SET  PDM_NOISE_GATE_THRE_45dB
 #define ALC_INIT_PGA_GAIN   0x1f
+#if INNER_CODEC_AUDIO_IN_USE_RESAMPLE
+#define ALC_SAMPLE_RATE     PDM_SAMPLERATE_32K
+#else
 #define ALC_SAMPLE_RATE     PDM_SAMPLERATE_16K
+#endif
 #define ALC_LOW_8_BIT_MAX_LEVEL     ((uint8_t)(PDM_ALC_LEVEL__6dB >> 0))
 #define ALC_HOGH_8_BIT_MAX_LEVEL    ((uint8_t)(PDM_ALC_LEVEL__6dB >> 8))
 #define ALC_LOW_8_BIT_MIN_LEVEL     ((uint8_t)(PDM_ALC_LEVEL__7_5dB >> 0))

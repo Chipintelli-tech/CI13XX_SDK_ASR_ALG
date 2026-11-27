@@ -81,7 +81,6 @@ int vpr_init(vpr_callback_t callback_func)
     REMOTE_CALL(vp_nn_cmpt_cfg(VP_USE_FRM_LEN/10,VP_CMPT_SKIP_NUM));
 	extern void get_ci_wman_vpr_model_addr(void);
     get_ci_wman_vpr_model_addr();
-    //mprintf("VP_USE_FRM_LEN = %d\n",VP_USE_FRM_LEN);
     vpr_info.status = VPR_STATUS_IDLE;
     vpr_info.request = VPR_REQ_NONE;
     vpr_info.callback_func = callback_func;
@@ -182,7 +181,6 @@ int vpr_run_one_recognition()     //云端协议执行
                             100,k,asr_start_frm,asr_valid_frm);
         if(ret)
         {
-            mprintf("vp_buffer_identify[0] = %d\r\n", vp_buffer_identify[0]);
             if(vp_buffer_identify[0] > 0.5)
             {
                 mprintf("识别到女声：%d\n", (int)(vp_buffer_identify[0]*100));
@@ -244,7 +242,6 @@ int vpr_run_one_recognition()
                             100,k,asr_start_frm,asr_valid_frm);
         if(ret)
         {
-            mprintf("vp_buffer_identify[0] = %d\r\n", vp_buffer_identify[0]);
             if(vp_buffer_identify[0] > 0.5)
             {
                 mprintf("识别到女声：%d\n", (int)(vp_buffer_identify[0]*100));

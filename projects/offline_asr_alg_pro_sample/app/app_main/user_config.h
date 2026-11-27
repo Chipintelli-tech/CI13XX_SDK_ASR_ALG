@@ -10,9 +10,8 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #define USE_CI_D02GS01J_BOARD       0   //CI-D0XGS01J，端子模块，芯片型号必须设置为1302
 #define USE_CI_D02GS02S_BOARD       0   //CI-D0XGS02S，SMT模块，芯片型号必须设置为1302
 #define USE_CI_D12GS01J_BOARD       0   //CI-D0XGS01J，端子模块，芯片型号必须设置为1312JE
-#define USE_CI_D06GT01D_BOARD       1   //CI-D06GT01D，开发版，芯片型号必须设置为1306
-#define USE_CI_E12GS02J_BOARD       0   //CI-E12GS02J，开发版，芯片型号必须设置为231x
-#define USE_CI_D06GT01J_BOARD       0   //CI_D06GT01J,开发板，型号必须为设置1306-仅配置支持双mic 算法+AEC，其他配置不支持
+#define USE_CI_D06GT01D_BOARD       0   //CI-D06GT01D，开发版，芯片型号必须设置为1306
+#define USE_CI_D06GT01J_BOARD       1   //CI_D06GT01J,开发板，型号必须为设置1306-仅配置支持双mic 算法+AEC，其他配置不支持
 #define USE_CUS_XXXXXXX_BOARD       0   //用户自定义
 
 #if (USE_CI_D02GS01J_BOARD == 1)
@@ -27,10 +26,6 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #elif (USE_CI_D06GT01D_BOARD == 1)
 #define CI_CHIP_TYPE                1306    //flash:4MB,QFN40
 #define BOARD_PORT_FILE             "CI-D06GT01D.c"
-#elif (USE_CI_E12GS02J_BOARD == 1)
-#define CI_CHIP_TYPE                2312    //flash:2MB,SSOP16
-#define BOARD_PORT_FILE             "CI-E12GS02J.c"
-#define USE_BLE                     1
 #elif (USE_CI_D06GT01J_BOARD == 1)
 #define CI_CHIP_TYPE                1306    //flash:4MB,QFN40 双mipc算法+外部codec 7243e用该板级
 #define BOARD_PORT_FILE             "CI-D06GT01J.c"
@@ -43,11 +38,11 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #define HOST_MIC_USE_NUMBER            1   //定义mic数量
 #endif
 
-//**麦克风电路模式配置
+//麦克风电路模式配置
 #define MIC_DIFF_SINGLE                0   /*1,单端。0，差分（通用模块都是差分模式，省成本的模块为单端(MICN_L 接GND)时，需要配置为SINGLE）)*/
+//输出识别中间结果使能
+#define ASR_MIDDLE_RESULT_OUT_EN       0   
 
-//**IIS采音功能开关配置
-#define USE_IIS1_OUT_PRE_RSLT_AUDIO    0   //1,开启IIS采音功能,可以使用采音板采音,占用PA2~PA6。会多消耗20KB SYS内存 0,关闭IIS采音功能,PA2~PA6可以用于其它功能。
 //串口采音功能-调试使用
 #define USE_UART_SEND_PRE_RSLT_AUDIO                  0                         //串口采音功能(只支持采16KHZ 16bit数据) 1-开 0-关 (注意：请先打开串口录音软件，再开机，避免数据错帧导致录音异常)
 #define USE_UART_SEND_PRE_RSLT_AUDIO_NUMBER   (UART_TypeDef*)(HAL_UART1_BASE)   //用哪个UART口将算法处理后的音频数据送出
@@ -89,13 +84,6 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 开启OTA功能，需修改打包升级工具版本，并在firmware\config.ini文件中设置成firmware_version=FW_V4，
 升级与被升级固件均要FW_V4版本工具打包生成 */
 #define CI_OTA_ENABLE               0 
-#define OTA_TIMOUT                  3 //和MCU端交互数据超时时间，单位秒
-#define OTA_RETRY_TIME              10//和MCU端交互数据重复发送次数
-#if (CI_CHIP_TYPE == 1306)
-#define OTA_CHIP_TYPE               0x06
-#else
-#define OTA_CHIP_TYPE               0x02
-#endif    
 
 //**时钟源配置
 #if ((CI_CHIP_TYPE == 1312) || (CI_CHIP_TYPE == 1311))
@@ -234,23 +222,14 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #endif        
 #endif
 
-#if USE_AI_DOA&&!USE_AEC_MODULE   //doa和aec共享内存，如果同时开启了doa和aec，无法配置AI_DOA_OUT_TYPE，默认都会输出角度
-#define AI_DOA_OUT_TYPE                 3         //doa输出类型：1-唤醒词输出角度  2-命令词输出角度 3-唤醒次和命令词都输出角度
+#if USE_NN_DOA&&!USE_AEC_MODULE                   //doa和aec共享内存，如果同时开启了doa和aec，无法配置AI_DOA_OUT_TYPE，默认都会输出角度
+#define NN_DOA_OUT_TYPE                 3         //doa输出类型：1-唤醒词输出角度  2-命令词输出角度 3-唤醒次和命令词都输出角度
+#endif
+#if USE_GCC_DOA
+#define GCC_DOA_OUT_TYPE                1        //doa输出类型：0-周期输出角度  1-唤醒词和命令词都输出角度
 #endif
 
-#if USE_TTS
-#define UART_TTS_NUMBER         HAL_UART1_BASE          //TTS文本合成通信串口号
-#define UART_TTS_IRQ            UART1_IRQn              //TTS文本合成通信串口中断号
-#define UART_TTS_BAUDRATE       UART_BaudRate115200     //TTS文本合成通信串口波特率
-#endif
-
-#if (!USE_BEAMFORMING_MODULE && !USE_DEREVERB_MODULE &&  !USE_AI_DOA) 
-#if HOST_MIC_USE_NUMBER == 2
-#define USE_DUAL_MIC_ANY                1         //使用任意MIC都可以识别
-#endif
-#endif
-
-#if USE_BEAMFORMING_MODULE  || USE_AI_DOA || USE_DEREVERB_MODULE || USE_DUAL_MIC_ANY
+#if USE_BEAMFORMING_MODULE  || (USE_NN_DOA || USE_GCC_DOA) || USE_DEREVERB_MODULE || USE_DUAL_MIC_ANY
 #if USE_CI_D12GS01J_BOARD
  #error "USE_CI_D12GS01J_BOARD not support dual mic alg !\n"    //131x不支持双mic算法
 #endif
@@ -271,11 +250,7 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #endif
 
 #if USE_AEC_MODULE
-    #if !ON_LINE_SUPPORT
-    #define PAUSE_VOICE_IN_WITH_PLAYING  0   //开启aec时关闭
-    #endif
     #define IF_JUST_CLOSE_HPOUT_WHILE_NO_PLAY   1
-
     #define HOST_CODEC_CHA_NUM  2
     #define OFFLINE_DUAL_MIC_ALG_SUPPORT    0
 
@@ -286,44 +261,30 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 
 
 #if USE_CI_D12GS01J_BOARD
-#if USE_BEAMFORMING_MODULE  || USE_AI_DOA || USE_DEREVERB_MODULE || USE_DUAL_MIC_ANY
+#if USE_BEAMFORMING_MODULE  || (USE_NN_DOA || USE_GCC_DOA) || USE_DEREVERB_MODULE || USE_DUAL_MIC_ANY
  #error "USE_CI_D12GS01J_BOARD not support aec and dual mic alg!\n"    //131x不支持aec和双 mic算法
 #endif
 #endif
 
-#if USE_AEC_MODULE && (USE_BEAMFORMING_MODULE  || USE_AI_DOA || USE_DEREVERB_MODULE || USE_DUAL_MIC_ANY)  //双mic + aec算法必须外部挂codec作为信号回采(推荐7243e)
+#if USE_AEC_MODULE && (USE_BEAMFORMING_MODULE  || (USE_NN_DOA || USE_GCC_DOA )|| USE_DEREVERB_MODULE || USE_DUAL_MIC_ANY)  //双mic + aec算法必须外部挂codec作为信号回采(推荐7243e)
 #define IF_USE_ANOTHER_CODEC_TO_GET_REF 1
 #if USE_CI_D06GT01J_BOARD != 1   //必须外挂codec使用USE_CI_D06GT01J_BOARD板级
 #error "dual mic alg + aec , must use USE_CI_D06GT01J_BOARD board\n"
 #endif
 #endif
-#if USE_BEAMFORMING_MODULE && USE_PWK
- #error "bf + pwk algorithm, not support\n"
-#endif
+
 //DOA和AEC在不接外部codec做AEC信号回采，不能同时使用
-#if USE_AI_DOA && USE_AEC_MODULE
+#if (USE_NN_DOA || USE_GCC_DOA) && USE_AEC_MODULE
     #if !IF_USE_ANOTHER_CODEC_TO_GET_REF
     #error "doa + aec algorithm, requires external codec\n"
     #endif
 #endif
 
-#if USE_DEREVERB_MODULE || USE_AI_DOA
+#if USE_DEREVERB_MODULE || (USE_NN_DOA || USE_GCC_DOA)
     #if HOST_MIC_USE_NUMBER == 1
     #error "algorithm requires tow mic, please set HOST_MIC_USE_NUMBER = 2\n"
     #endif
 #endif
-
-//离线双麦算法支持 和 在线支持不能同时
-#if (OFFLINE_DUAL_MIC_ALG_SUPPORT && ON_LINE_SUPPORT)
-#error "error, OFFLINE_DUAL_MIC_ALG_SUPPORT and ON_LINE_SUPPORT can't be toghter\n"
-#endif
-
-
-//AEC软回采 和 在线支持不能同时
-#if ON_LINE_SUPPORT && USE_SOFT_AEC_REF
-#error "online and soft aec ref can't be toghter\n"
-#endif
-
 
 //AEC软回采 和 重采样
 #if USE_SOFT_AEC_REF && INNER_CODEC_AUDIO_IN_USE_RESAMPLE
@@ -331,26 +292,22 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #endif
 
 
-#if !(OFFLINE_DUAL_MIC_ALG_SUPPORT || ON_LINE_SUPPORT) && USE_SOFT_AEC_REF
+#if !(OFFLINE_DUAL_MIC_ALG_SUPPORT) && USE_SOFT_AEC_REF
 #error "no two mic alg, no soft aec ref\n"
 #endif
 
-#if USE_ALC_AUTO_SWITCH_MODULE && (USE_AI_DOA || USE_DEREVERB_MODULE || USE_BEAMFORMING_MODULE || USE_AEC_MODULE)
+#if USE_ALC_AUTO_SWITCH_MODULE && ((USE_NN_DOA || USE_GCC_DOA) || USE_DEREVERB_MODULE || USE_BEAMFORMING_MODULE || USE_AEC_MODULE)
 #error "two mic alg, no alc auto\n"
 #endif
 
 
 //单麦就近唤醒 和 红外不能与多意图同时使用
-#if USE_PWK || USE_IR_ENABLE
+#if USE_IR_ENABLE
 #if MULT_INTENT > 1
  #error "pwk and ir, can't be toghter mult intent\n"
 #endif
 #endif
 
-//单麦就近唤醒 和 动态ALC和深度降噪,自学习，事件检测算法不能同时使用
-#if USE_PWK && (USE_ALC_AUTO_SWITCH_MODULE || USE_DENOISE_NN || USE_CWSL || USE_SED_CRY || USE_SED_SNORE)
-#error "can't be toghter pwk\n"
-#endif
 
 //语音模块协议 和 云端协议使能不能同时使用
 #if MSG_COM_USE_UART_EN && CLOUD_UART_PROTOCOL_EN
@@ -361,41 +318,7 @@ chipintelli提供的部分开发板和模组，可以通过下面的宏选择，
 #error "use ir function, UART_PROTOCOL_VER must set 2!\n"
 #endif
 
-#if USE_TTS
-#if SIMPLE_AUDIO_PLAYER_ENABLE
-#error "use TTS, SIMPLE_AUDIO_PLAYER_ENABLE MUSET SET 0!\n"
-#endif
-#endif
 
-//BLE相关协议
-#if USE_BLE    
-#if !USE_NULL || USE_PWK || (MULT_INTENT > 1)
-#error "ble not Support algorithm function!\n"
-#endif
-#define EXTERNAL_CRYSTAL_OSC_FROM_RF           1            //蓝牙端使用外部晶振, 语音端时钟由蓝牙端提供-用户不可修改
-#define CIAS_BLE_CONNECT_MODE_ENABLE           1            //ble连接模式使能
-#define CIAS_BLE_SCAN_ENABLE                   1            //ble连接模式使能, 同时广播开启扫描功能
-#define CIAS_BLE_ADV_GROUP_MODE_ENABEL         0            //ble纯广播模式-不推荐使用
-#define CIAS_BLE_DEBUG_ENABLE                  0            //ble 测试模式-客户一般用不上
-#define BLE_CONNECT_TIMEOUT                    8            //蓝牙连接超时时间(S),超时会重启蓝牙协议栈,设置为0则表示不进行超时判断
-#define BLE_NAME_MAX_LEN                       18           //蓝牙广播名称最大长度
-#define RF_RX_TX_MAX_LEN                       20           //蓝牙收发数据最大长度为20,一般不用修改
-#define CIAS_PROTOCOL_VER                      1            //和小程序通信协议版本：1-V1.0  2-V1.1
-#define CIAS_BLE_USE_DEFAULT_ADV_DATA          1            //和启英小程序配合使用
-#define CIAS_BLE_APP_CMD                       1            //小程序调用用户层事件回调函数
-#define DEV_DRIVER_EN_ID                   DEV_LIGHT_CONTROL_MAIN_ID
-
-#if     (CIAS_BLE_SCAN_ENABLE == 1 && CIAS_BLE_CONNECT_MODE_ENABLE != 1)
-#define CIAS_BLE_CONNECT_MODE_ENABLE           1
-#endif
-#if CIAS_BLE_CONNECT_MODE_ENABLE && CIAS_BLE_ADV_GROUP_MODE_ENABEL
-#error "CIAS_BLE_CONNECT_MODE_ENABLE and CIAS_BLE_ADV_GROUP_MODE_ENABEL ONLY ENABLE ONE"
-#endif
-#if (CIAS_BLE_DEBUG_ENABLE == 1)                          //开启AT指令
-#define CIAS_BLE_AT_ENABLE                     1
-#endif 
-
-#endif   //USE_BLE
 
 
 

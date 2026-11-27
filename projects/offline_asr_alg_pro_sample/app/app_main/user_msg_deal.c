@@ -213,9 +213,6 @@ uint32_t deal_asr_msg_by_cmd_id(sys_msg_asr_data_t *asr_msg, cmd_handle_t cmd_ha
             ret = 0;
             break;
     }
-#if CIAS_BLE_CONNECT_MODE_ENABLE
-    deal_ble_send_msg(cmd_id);
-#endif
     if (ret && select_index >= -1)
     {
         #if PLAY_OTHER_CMD_EN && !WMAN_PLAY_EN

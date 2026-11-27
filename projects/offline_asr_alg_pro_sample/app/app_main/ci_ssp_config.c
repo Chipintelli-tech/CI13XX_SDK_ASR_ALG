@@ -9,20 +9,18 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
 #include "alg_preprocess.h"
 #include "ci_audio_wrapfft.h"
-#include "ci_denoise.h"
+#include "ci_tra_denoise.h"
 #include "ci_bf.h"
 #include "ci_dereverb.h"
 #include "alc_auto_switch.h"
 #include "ci_adapt_aec.h"
-#include "ci_doa.h"
-#include "ci_ai_doa_init_param.h"
+#include "ci_gcc_doa.h"
+#include "ci_nn_doa_init_param.h"
 #include "ci_pwk.h"
-#include "ai_denoise_api.h"
+#include "nn_denoise_api.h"
 #include "sed_manage.h"
-
 #include "sdk_default_config.h"
 #include "status_share.h"
 
@@ -30,12 +28,12 @@
 const iis_out_audio_config_t iis_out_audio_config =
 {
 	.alg_enable = true,
-	.iis_out_enable = USE_IIS1_OUT_PRE_RSLT_AUDIO || RECORD_PLAY_BY_FLASH_ENABLE,			 //用于采音。
+	.iis_out_enable = USE_IIS1_OUT_PRE_RSLT_AUDIO || RECORD_PLAY_BY_FLASH_ENABLE,			 //用于采音
     .uart_out_enable = USE_UART_SEND_PRE_RSLT_AUDIO,         //用于uart采音。
-	.iis_left_channel = MICL,		 //左通道输出音频。MICL、MICR、REFL、REFR、DST1、DST2
-	.iis_right_channel = DST1,		 //右通道输出音频。MICL、MICR、REFL、REFR、DST1、DST2
-	.vad_mark_enable = true,		 //是否附带vad标签，默认左通道输出vad标签。
-	.ssp_dst_cover_micl_enble = false //处理过后的音频dst覆盖原始micl数据,16k采样数据
+	.iis_left_channel = MICL,		                         //左通道输出音频。MICL、MICR、REFL、REFR、DST1、DST2
+	.iis_right_channel = DST1,		                         //右通道输出音频。MICL、MICR、REFL、REFR、DST1、DST2
+	.vad_mark_enable = true,		                         //是否附带vad标签，默认左通道输出vad标签。
+	.ssp_dst_cover_micl_enble = false                        //处理过后的音频dst覆盖原始micl数据,16k采样数据
 };
 //alc_auto_switch模块配置
 const alc_auto_switch_config_t alc_auto_switch_config =
@@ -49,7 +47,6 @@ const alc_auto_switch_config_t alc_auto_switch_config =
 	.alc_off_codec_adc_gain = 20
 };
 //stft_istft模块配置
-//#define FFT_MODEL 512
 const stft_istft_config_t stft_istft_config =
 {
 //#if 512 == FFT_MODEL
@@ -87,17 +84,6 @@ const stft_istft_config_t stft_istft_config =
 	#endif
 #endif
 };
-//denoise模块配置
-const denoise_config_t denoise_config =
-{
-	.alg_enable = true,
-	.start_Hz = 0,			  //降噪起始频率 单位Hz
-	.end_Hz = 8000,			  //降噪结束频率 单位Hz
-	.fre_resolution = 31.25f, //频率分辨率 单位Hz
-	.aggr_mode = 1,//算法处理的效果等级:0，1，2，处理效果依次增强，失真也会变大
-	.set_denoise_threshold = 7000.0f,	  //默认帧平均幅值>=7000起效
-	.set_denoise_thr_window_size = 20 //门限判断窗长
-};
 
 //就近唤醒模块配置
 pwk_config_t ci_pwk_config = 
@@ -105,12 +91,44 @@ pwk_config_t ci_pwk_config =
 	.alg_enable = true
 };
 
-//ai_denoise模块配置
-denoise_nn_config_t ai_denoise_config = 
+//传统denoise模块配置
+const denoise_config_t tra_denoise_config =
+{
+	.alg_enable = true,
+	.start_Hz = 0,	          //降噪起始频率 单位Hz
+	.end_Hz = 0,			  //降噪结束频率 单位Hz,降噪范围变大，需要调大TRA_DENOISE_USE_BNPU_SRAM_SIZE内存
+	.fre_resolution = 31.25f, //频率分辨率 单位Hz
+	.aggr_mode = 1,            //算法处理的效果等级:0，1，2，处理效果依次增强，失真也会变大
+	.set_denoise_threshold = 2000.0f,	  //默认帧平均幅值>=7000起效
+	.set_denoise_thr_window_size = 1 //门限判断窗长
+};
+
+#if DENOISE_STRENGTH_ADAPT_ENABLE
+//NN噪声估计模块配置
+noise_est_config_t nn_noise_est_config = 
+{
+	.noise_est_debug    = false,             //噪声估计调试打印使能，在降噪算法自适应beta模式下，首先调试打印判断需要开启beta自适应的最小阈值，小于该阈值则使用默认降噪强度
+};
+#endif
+//NN 降噪模块配置
+denoise_nn_config_t nn_denoise_config = 
 {
 	.alg_enable = true,
 	.alpha_forget = 0.75f,
-	.denoise_mode = 0
+	.denoise_mode = 0,
+	.denoise_beta = 1.0f,					//降噪强度系数范围（0.0 < beta <= 1.0）1.0为默认降噪强度（完全的降噪效果），beta越小降噪强度越低
+
+#if DENOISE_STRENGTH_ADAPT_ENABLE
+	.denoise_beta_adaptive_mode =  true,	//beta自适应模式，配合NN噪声估计模块使用
+#else
+	.denoise_beta_adaptive_mode =  false,	//beta自适应模式，配合NN噪声估计模块使用
+#endif
+	.denoise_ratio_upper_limit 	=  1.0f,	//beta上限值
+	.denoise_ratio_lower_limit 	=  0.87f,	//beta下限值,推荐大于0.85
+	//由以下2个阈值均分成4个噪声能量对数区，每个分区使用 beta上下限均分的4个beta值;让高噪环境使用小beta保留人声，低噪环境使用大beta完全相信降噪能够保留人声
+	//大于denoise_energy_highest_thr或者在4个分区中最大的分区都使用beta上限值，小于denoise_energy_lowest_thr则beta使用1.0
+	.denoise_energy_highest_thr =  90.0f,	//噪声能量对数最高阈值
+	.denoise_energy_lowest_thr  =  75.0f,	//噪声能量对数最低阈值
 };
 
 //哭声检测模块
@@ -129,24 +147,41 @@ const sed_config_t sed_config_snore =
 	.mode = 1,
 	.times = 3
 };
-//doa模块配置
-const doa_config_t doa_config =
+
+//GCC DOA模块配置
+const gcc_doa_config_t gcc_doa_config =
 {
 	.alg_enable = true,
-	.distance = 40,
-	.min_frebin = 40,
-	.max_frebin = 130,
-	.samplerate = 16000,
-	.doa_resolut = 5
+	.distance = 40,      //麦克风间距范围30~80mm
+	.min_frebin = 40,    //最小频点（不可改参数）
+	.max_frebin = 110,   //最大频点（不可改参数）
+	.samplerate = 16000, //采样率（不可改参数）
+	.corr_alpha = 0.1f,   //互相关矩阵平滑参数（不可改参数）
+	.num_frebin = 15,    //挑选频点个数（不可改参数）
+	.denoise_en = false, //false:为不开启降噪，true:为开启降噪
+	.energy_thr = 0.2f,   //能量阈值
+	.reverb_miu = 0.1f,   //降混响算法的步长（不可改参数）
+	.doa_resolut = 8,    //doa分辨率（不可改参数）
+
+	/*麦间距scale配置值
+	distance | distance_scale
+		30	 |	   0.6f
+		40	 |	   0.7f		
+		50	 |	   0.75f
+		60	 |	   0.8f
+		70	 |	   0.7f			
+		80	 |	   0.65f					
+	*/
+	.distance_scale = 0.7f         //导向向量补偿因子 
 };
 
-//ai_doa模块配置
-const doa_nn_config_t doa_nn_config = 
+//NN DOA模块配置
+const nn_doa_config_t nn_doa_config = 
 {
 	.eliminate62_5 = 2            // 消除62.5Hz以下低频噪声影响，0：关闭，2：开启
 };
 
-//dr模块配置,startHZ:算法起效的起始频率  endHZ:算法起效的结束频率  范围:0-8KHZ,调大会增加一定的算法力和内存消耗
+//降混响模块配置,startHZ:算法起效的起始频率  endHZ:算法起效的结束频率  范围:0-8KHZ,调大会增加一定的算法力和内存消耗
 //160HZ-4800HZ 消耗28KB内存  0-8000HZ 消耗49KB内存
 const dereverb_config_t dereverb_config =
 {
@@ -160,7 +195,7 @@ const dereverb_config_t dereverb_config =
 #endif
 };
 
-//bf模块配置
+//BF模块配置
 const bf_config_t bf_config =
 {
 	.alg_enable = true,
@@ -173,27 +208,28 @@ const bf_config_t bf_config =
 	.bf_deepse_mode = BF_DEEPSE_MODE,
 	.bf_asr_valid_mode = BF_ASR_VALID_MODE
 };
-// aec模块配置
+
+// AEC模块配置
 const aec_config_t aec_config =
 {
 	.alg_enable = true,
 	#if (USE_BEAMFORMING_MODULE && BF_DEEPSE_MODE)
-	.mic_channel_num = 2,						   //麦克风信号通道数
+	.mic_channel_num = 2,						       //麦克风信号通道数
 	#else
 	.mic_channel_num = 1,
 	#endif
-	.ref_channel_num = 1,						   //参考信号通道数
+	.ref_channel_num = 1,						       //参考信号通道数
 	.aec_control_mode = ENABLE_PLAYING_STATE_MODE,     //ENABLE_PLAYING_STATE_MODE:根据播报状态进行aec控制;  COMPUTE_REF_AMPL_MODE:根据参考幅值大小进行aec控制
-	.aec_gain = 1.0f,							   //增益数值
-	.aec_enable_threshold = 2000.0f,	           //参考信号判断门限值
-    .aec_mic_div_ref_thr = 0.0f,    
+	.aec_gain = 1.0f,							       //增益数值
+	.aec_enable_threshold = 400.0f,	                   //参考信号判断门限值 直通600.0f，十分压400.0f
+    // .aec_mic_div_ref_thr = 0.0001f,  
 	.nlp_flag = 2,
 	.aggr_mode = 1,
-	.fft_size = 256,	   //频域处理频点数
-	.alc_off_codec_adc_gain_mic = 20,    //主mic左通道pga增益
-    .alc_off_codec_adc_gain_ref = 0      //主mic右通道(参考信号)
+	.fft_size = 256,	                               //频域处理频点数
+	.alc_off_codec_adc_gain_mic = 20,                  //主mic左通道pga增益
+    .alc_off_codec_adc_gain_ref = 4,                   //主mic右通道(参考信号)
+	.dtd_ratio = 1.0f,
 };
-
 
 
 //.module_config域配置为NULL表示关闭此项。
@@ -203,17 +239,17 @@ ci_ssp_config_t ci_ssp = {
 	#else
 	.alc_auto_switch = 	{.module_config = NULL},
 	#endif
-
 	.stft = 			{.module_config = &stft_istft_config},
-
-	#if USE_AI_DOA
-	.doa = 				{.module_config = &doa_nn_config},
+	#if USE_NN_DOA
+	.doa = 				{.module_config = &nn_doa_config},
+	#elif USE_GCC_DOA
+	.doa =              {.module_config = &gcc_doa_config},
 	#else
 	.doa = 				{.module_config = NULL},
 	#endif
 
 	#if USE_AEC_MODULE
-	 .aec = 				{.module_config = &aec_config},
+	 .aec = 			{.module_config = &aec_config},
 	#else
 	.aec = 				{.module_config = NULL},
 	#endif
@@ -230,22 +266,15 @@ ci_ssp_config_t ci_ssp = {
 	.bf = 				{.module_config = NULL},
 	#endif
 
-	#if USE_DENOISE_NN
-	.ai_denoise = 		{.module_config = &ai_denoise_config},
-	#else
-	.ai_denoise = 		{.module_config = NULL},
+	#if USE_NN_DENOISE
+	.nn_denoise = 		{.module_config = &nn_denoise_config},
+	#if DENOISE_STRENGTH_ADAPT_ENABLE
+	.nn_noise_est = 	{.module_config = &nn_noise_est_config},
 	#endif
-
-	#if USE_PWK
-	.pwk =              {.module_config = &ci_pwk_config}, 
+	#elif USE_TRA_DENOISE
+	.tra_denoise = 		{.module_config = &tra_denoise_config},
 	#else
-	.pwk = 				{.module_config = NULL},
-	#endif
-	
-	#if USE_DENOISE_MODULE
-	.denoise = 			{.module_config = &denoise_config},
-	#else
-	.denoise = 			{.module_config = NULL},
+	.nn_denoise = 		{.module_config = NULL},
 	#endif
 
 	.istft = 			{.module_config = &stft_istft_config},
@@ -256,7 +285,7 @@ ci_ssp_config_t ci_ssp = {
 	#elif USE_SED_SNORE
 	.sed = 				{.module_config = &sed_config_snore},
 	#else
-	.sed = 			{.module_config = NULL},
+	.sed = 			    {.module_config = NULL},
 	#endif
 
 };
@@ -265,12 +294,12 @@ ci_ssp_config_t ci_ssp = {
 audio_capture_t audio_capture =
 {
     #if INNER_CODEC_AUDIO_IN_USE_RESAMPLE
-    .frame_length = AUDIO_CAP_POINT_NUM_PER_FRM * 2, // frame_length;32k采样，输入点数为320
+    .frame_length = AUDIO_CAP_POINT_NUM_PER_FRM * 2, // frame_length; 32k采样，输入点数为320
     #else
     .frame_length = AUDIO_CAP_POINT_NUM_PER_FRM, // frame_length;16k采样，输入点数为160
     #endif
 
-    #if USE_BEAMFORMING_MODULE  || USE_AI_DOA || USE_DEREVERB_MODULE || USE_DUAL_MIC_ANY
+    #if USE_BEAMFORMING_MODULE  || USE_NN_DOA || USE_GCC_DOA || USE_DEREVERB_MODULE || USE_DUAL_MIC_ANY
     .mic_channel_num = 2, // mic_channel_num;
     #else
     .mic_channel_num = 1,                        // mic_channel_num;
@@ -281,7 +310,6 @@ audio_capture_t audio_capture =
     #else
     .ref_channel_num = 0,                        //ref_channel_num;
     #endif
-    // MICL // mic_model;
 };
 
 

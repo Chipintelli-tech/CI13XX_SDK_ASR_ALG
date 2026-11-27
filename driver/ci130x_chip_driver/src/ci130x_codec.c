@@ -469,6 +469,12 @@ void inner_codec_alc_disable(inner_codec_cha_sel_t cha)
     CODEC->rega  &= ~(0x01<<bit_offset);
 }
 
+int inner_codec_alc_state(inner_codec_cha_sel_t cha)
+{
+    int ret = (CODEC->alc_reg[cha].reg49 >> 6) & 0x01;
+    return ret;
+}
+
 
 
 void inner_codec_set_pga_gain(inner_codec_cha_sel_t cha,int32_t ALC_Gain)
@@ -492,7 +498,11 @@ void inner_codec_set_pga_gain(inner_codec_cha_sel_t cha,int32_t ALC_Gain)
 #define ALC_NOISE_GATE  INNER_CODEC_GATE_DISABLE
 #define ALC_NOISE_GATE_SET  INNER_CODEC_NOISE_GATE_THRE_45dB
 #define ALC_INIT_PGA_GAIN   0x1f
+#if INNER_CODEC_AUDIO_IN_USE_RESAMPLE
+#define ALC_SAMPLE_RATE     INNER_CODEC_SAMPLERATE_32K
+#else
 #define ALC_SAMPLE_RATE     INNER_CODEC_SAMPLERATE_16K
+#endif
 #define ALC_LOW_8_BIT_MAX_LEVEL     ((uint8_t)(INNER_CODEC_ALC_LEVEL__6dB >> 0))
 #define ALC_HOGH_8_BIT_MAX_LEVEL    ((uint8_t)(INNER_CODEC_ALC_LEVEL__6dB >> 8))
 #define ALC_LOW_8_BIT_MIN_LEVEL     ((uint8_t)(INNER_CODEC_ALC_LEVEL__7_5dB >> 0))
@@ -718,6 +728,7 @@ int icodec_config(cm_sound_info_t * audio_info, io_direction_t io_dir)
 
 int icodec_ioctl(io_direction_t io_dir, uint32_t param0, uint32_t param1, uint32_t param2)
 {
+	int ret = 0;
     cm_io_ctrl_cmd_t cmd = (cm_io_ctrl_cmd_t)param0;
     switch(cmd)
     {
@@ -736,6 +747,9 @@ int icodec_ioctl(io_direction_t io_dir, uint32_t param0, uint32_t param1, uint32
     case CM_IOCTRL_ALC_DISABLE:
         inner_codec_alc_disable((inner_codec_cha_sel_t)(param1-1));
         break;
+    case CM_IOCTRL_ALC_STATE_GET:
+        ret = inner_codec_alc_state((inner_codec_cha_sel_t)(param1-1));
+        break;
         //关闭没用的DAC，ADC通道，降低功耗
     case CM_IOCTRL_DAC_ENABLE:
         
@@ -747,7 +761,7 @@ int icodec_ioctl(io_direction_t io_dir, uint32_t param0, uint32_t param1, uint32
         break;
     }
 
-    return 0;
+    return ret;
 }
 
 /***************** (C) COPYRIGHT Chipintelli Technology Co., Ltd. *****END OF FILE****/

@@ -58,93 +58,6 @@ static codec_manage_t cm = {0};
 extern unsigned char send_buf_addr[2048];
 
 volatile uint8_t iis_pad_for_clk_input_flag = 0;
-
-#if USE_SOFT_AEC_REF
-static bool is_playing = false;
-static bool pre_state_is_playing = false;
-static uint32_t play_buffer_start_addr = 0;
-static uint32_t play_buffer_end_addr = 0;
-static uint32_t first_play_addr = 0;
-static bool is_ref_rx_align = false;
-static uint32_t rx_align_addr = 0;
-
-void set_play_buffer_info(uint32_t start_addr,uint32_t end_addr)
-{
-    play_buffer_start_addr = start_addr;
-    play_buffer_end_addr = end_addr;
-}
-
-
-bool is_ref_addr_valid(uint32_t rx_addr)
-{
-    static bool is_valid = false;
-    if(is_ref_rx_align)
-    {
-        if(rx_addr == rx_align_addr)
-        {
-            is_valid = true;
-        }
-    }
-    else
-    {
-        is_valid = false;
-    }
-    return is_valid;
-}
-
-
-#define REF_REAL_BLOCK_NUM  (AUDIO_CAP_POINT_NUM_PER_FRM/AUDIO_CAP_DIV_NUM)
-
-
-static uint32_t pre_play_addr = 0;
-static int16_t play_buffer_tail[REF_REAL_BLOCK_NUM];
-uint32_t get_play_buffer_cur_addr(uint32_t rx_addr)
-{
-    if(!is_playing)
-    {
-        return (uint32_t)cm.zero_buffer;
-    }
-    
-
-    bool is_ref_valid = is_ref_addr_valid(rx_addr);
-    if(!is_ref_valid)
-    {
-        return (uint32_t)cm.zero_buffer;
-    }
-
-    uint32_t addr = 0;
-    int block_size = REF_REAL_BLOCK_NUM * sizeof(int16_t);
-    bool is_buffer_rollback = false;
-    if(0 == pre_play_addr)
-    {
-        addr = first_play_addr;
-    }
-    else
-    {
-        addr = pre_play_addr + block_size;
-        if(addr >= play_buffer_end_addr)
-        {
-            int size1 = addr - play_buffer_end_addr;
-            memcpy((void*)play_buffer_tail,(void*)addr,size1);
-            int size2 = block_size - size1;
-            memcpy((void*)((uint32_t)play_buffer_tail + size1),(void*)play_buffer_start_addr,size2);
-            addr = (addr - play_buffer_end_addr) + play_buffer_start_addr;
-            is_buffer_rollback = true;
-        }
-    }
-    pre_play_addr = addr;
-
-    if(is_buffer_rollback)
-    {
-        return (uint32_t)play_buffer_tail;
-    }
-    else
-    {
-        return addr;
-    }
-}
-#endif
-
 /**
  * @brief 标记IIS PAD方向
  *
@@ -719,15 +632,6 @@ int cm_start_codec(int codec_index, io_direction_t io_dir)
         }
         
         play_buffer_queue->data_current_addr = play_buffer_queue->data_begin_addr;
-
-        #if USE_SOFT_AEC_REF
-        if(PLAY_CODEC_ID == codec_index)
-        {
-            is_playing = true;
-            first_play_addr = play_buffer_queue->data_current_addr;
-        }
-        #endif
-
         IISxDMA_TADDR0(IISDMA0,iis_dma_channel,play_buffer_queue->data_current_addr);
         play_buffer_queue->data_current_addr += cm.codec_info[codec_index].play_buffer_info.block_size;
         if (play_buffer_queue->data_current_addr < play_buffer_queue->data_end_addr)
@@ -760,20 +664,25 @@ int cm_stop_codec(int codec_index, io_direction_t io_dir)
     {
         void * pcm_buffer;
         BaseType_t rst;
-
-        // 已写入busy queue的buffer转移到idle queue
-        while((rst = xQueueReceive(cm.codec_info[codec_index].play_buffer_queue.busy_queue, &pcm_buffer, 5)) == pdTRUE)
+        // 若在ISR中调用该接口，需确保busy queue已经清空再调用cm_stop_codec
+        // 已写入busy queue的buffer转移到idle queue；
+        if(!check_curr_trap())
         {
-            xQueueSend(cm.codec_info[codec_index].play_buffer_queue.idle_queue, &pcm_buffer, 5);
+            while((rst = xQueueReceive(cm.codec_info[codec_index].play_buffer_queue.busy_queue, &pcm_buffer, 5)) == pdTRUE)
+            {
+                xQueueSend(cm.codec_info[codec_index].play_buffer_queue.idle_queue, &pcm_buffer, 5);
+            }
         }
 
         // 等待硬件正在播放的buffer播放完成，转入idle queue
-        while(uxQueueMessagesWaiting(cm.codec_info[codec_index].play_buffer_queue.idle_queue) != cm.codec_info[codec_index].play_buffer_info.buffer_num)
+        if(!check_curr_trap())
         {
-            // mprintf("idle queue buffer count: %d\n", uxQueueMessagesWaiting(cm.codec_info[codec_index].play_buffer_queue.idle_queue));
-            vTaskDelay(1);
+            while(uxQueueMessagesWaiting(cm.codec_info[codec_index].play_buffer_queue.idle_queue) != cm.codec_info[codec_index].play_buffer_info.buffer_num)
+            {
+                // mprintf("idle queue buffer count: %d\n", uxQueueMessagesWaiting(cm.codec_info[codec_index].play_buffer_queue.idle_queue));
+                vTaskDelay(1);
+            }
         }
-
         codec_info_t * code_info_p = &(cm.codec_info[codec_index]);
         IISDMA_TypeDef* IISDMAx = IISDMA0;
         iis_base_t IISx = code_info_p->codec_hw_info.output_iis.IISx;
@@ -786,16 +695,6 @@ int cm_stop_codec(int codec_index, io_direction_t io_dir)
         {
             cm.codec_info[codec_index].codec_hw_info.codec_if.codec_stop(io_dir);
         }
-
-        #if USE_SOFT_AEC_REF
-        if(PLAY_CODEC_ID == codec_index)
-        {
-            is_playing = false;
-            is_ref_rx_align = false;
-            rx_align_addr = 0;
-            pre_play_addr = 0;
-        }
-        #endif
     }
     xSemaphoreGive(cm.semaphore);
     return 0;
@@ -819,7 +718,6 @@ int cm_read_codec(int codec_index, uint32_t * data_addr, uint32_t * data_size)
     record_buffer_queue_t * record_buffer_queue = &(code_info_p->record_buffer_queue);
     cm_record_buffer_info_t * record_buffer_info = &(code_info_p->record_buffer_info);
 
-    // if (pdTRUE == xSemaphoreTake(record_buffer_queue->recorded_count_sem, portMAX_DELAY))
     if (pdTRUE == xSemaphoreTake(record_buffer_queue->recorded_count_sem, pdMS_TO_TICKS(300)))
     {
         portENTER_CRITICAL();
@@ -833,6 +731,7 @@ int cm_read_codec(int codec_index, uint32_t * data_addr, uint32_t * data_size)
         }
         portEXIT_CRITICAL();
     }
+    return 0;
 }
 
 int cm_write_codec(int codec_index, void * pcm_buffer,uint32_t wait_tick)
@@ -1004,6 +903,21 @@ int cm_set_codec_alc(int codec_index, cm_cha_sel_t cha, FunctionalState alc_enab
     }
 }
 
+/**
+ * @brief CODEC ADC ALC开关状态读取的接口
+ * 
+ * @param codec_index CODEC编号
+ * @param cha 左声道或者右声道，不可以双声道
+ * @return int 1：ALC开 0：ALC关
+ */
+int cm_get_codec_alc_state(int codec_index, cm_cha_sel_t cha)
+{
+    if (cm.codec_info[codec_index].codec_hw_info.codec_if.codec_ioctl)
+    {
+        return cm.codec_info[codec_index].codec_hw_info.codec_if.codec_ioctl(CODEC_INPUT, CM_IOCTRL_ALC_STATE_GET, cha,0);
+    }
+}
+
 
 int cm_set_codec_dac_enable(int codec_index, int channel, FunctionalState en)
 {
@@ -1072,19 +986,6 @@ void cm_input_interrupt_handler(IISDMAChax dma_channel, BaseType_t * xHigherPrio
     record_buffer_queue_t * record_buffer_queue = &(code_info_p->record_buffer_queue);
     cm_record_buffer_info_t * record_buffer_info = &(code_info_p->record_buffer_info);
 
-    #if USE_SOFT_AEC_REF
-    if(dma_channel == IISDMACha1)
-    {
-        if((is_playing != pre_state_is_playing) && (true == is_playing))
-        {
-            uint32_t addr = IISxDMA_RXADDR(IISDMA0,dma_channel) - record_buffer_info->block_size + 4;
-            rx_align_addr = addr;
-            is_ref_rx_align = true;
-        }
-        pre_state_is_playing = is_playing;
-    }
-    #endif
-
     // 1个block写满了，向后移动一个block
     record_buffer_queue->write_addr += record_buffer_info->block_size;
     if (record_buffer_queue->write_addr >= (uint32_t)record_buffer_info->pcm_buffer + record_buffer_info->buffer_size)
@@ -1105,15 +1006,6 @@ void cm_input_interrupt_handler(IISDMAChax dma_channel, BaseType_t * xHigherPrio
         // volatile uint32_t delay = 10000;
         // while(delay--);
         
-#ifdef CIAS_BLE_CONNECT_MODE_ENABLE
-		extern bool status_connected;
-        if (status_connected)
-        {
-            mprintf("record buffer overflow!\n");
-        }
-#else
-        mprintf("record buffer overflow!\n");
-#endif 
     }
     else
     {
@@ -1180,139 +1072,4 @@ void cm_output_interrupt_handler(IISDMAChax dma_channel, BaseType_t * xHigherPri
     play_buffer_queue->data_current_addr += code_info_p->play_buffer_info.block_size;
 }
 
-#if 0
-#include "ci130x_inner_codec.h"
 
-#define IIS_OUT_INDEX               0
-#define BLOCK_SIZE_TEST              (320)/*16ms perframe*/
-
-const cm_codec_hw_info_t inner_codec_info = 
-{
-    .IICx = IIC_NULL,
-    .output_iis.IISx = IIS1,
-    .output_iis.iis_mode_sel = IIS_MASTER,
-    .output_iis.over_sample = IIS_MCLK_FS_256,
-    .output_iis.clk_source = AUDIO_PLAY_CLK_SOURCE_INTER_RC,
-    .output_iis.mclk_out_en = IIS_MCLK_OUT,
-    .output_iis.iis_data_format = IIS_DF_IIS,
-    .output_iis.sck_lrck_ratio = IIS_SCK_LRCK_64,
-    .output_iis.tx_cha = IIS_TX_CHANNAL_TX0,
-    .output_iis.scklrck_out_en = IIS_SCKLRCK_OUT,
-
-    .input_iis.IISx = IIS1,
-    .input_iis.iis_mode_sel = IIS_SLAVE,
-    .input_iis.over_sample = IIS_MCLK_FS_256,
-    .input_iis.clk_source = AUDIO_PLAY_CLK_SOURCE_IPCORE,
-    .input_iis.mclk_out_en = IIS_MCLK_OUT,
-    .input_iis.iis_data_format = IIS_DF_IIS,
-    .input_iis.sck_lrck_ratio = IIS_SCK_LRCK_64,
-    .input_iis.rx_cha = IIS_RX_CHANNAL_RX0,
-    .input_iis.scklrck_out_en = IIS_SCKLRCK_IN,
-
-    .codec_if = 
-    {
-        #if USE_CODEC//TODO待修改CODEC驱动的接口
-        .codec_init = icodec_init,
-        .codec_config = icodec_config,
-        .codec_start = icodec_start,
-        .codec_stop = icodec_stop,
-        .codec_ioctl = icodec_ioctl,
-        #endif
-    }
-}; 
-
-
-
-const cm_codec_hw_info_t iis_out_hw_info = 
-{
-    .IICx = IIC_NULL,
-    .output_iis.IISx = IIS0,
-    .output_iis.iis_mode_sel = IIS_MASTER,
-    .output_iis.over_sample = IIS_MCLK_FS_256,
-    .output_iis.clk_source = AUDIO_PLAY_CLK_SOURCE_IPCORE,
-    .output_iis.mclk_out_en = IIS_MCLK_OUT,
-    .output_iis.iis_data_format = IIS_DF_IIS,
-    .output_iis.sck_lrck_ratio = IIS_SCK_LRCK_64,
-    .output_iis.tx_cha = IIS_TX_CHANNAL_TX0,
-    .codec_if = 
-    {
-        .codec_init = NULL,
-        .codec_config = NULL,
-        .codec_start = NULL,
-        .codec_stop = NULL,
-        .codec_ioctl = NULL,
-    }
-}; 
-
-const cm_sound_info_t record_sound_info = {
-    .sample_rate = 16000,
-    .channel_flag = 3,          //双声道录制
-    .sample_depth = IIS_DW_16BIT,
-};
-
-
-void record_task(void* p)
-{   
-    // 注册内部codec
-    cm_reg_codec(0, (cm_codec_hw_info_t*)&inner_codec_info);
-    // 注册IIS输出
-    //cm_reg_codec(IIS_OUT_INDEX, (cm_codec_hw_info_t*)&iis_out_hw_info);
-#if 0
-    //配置录音PCM buffer
-    cm_record_buffer_info_t record_buffer_info;
-    record_buffer_info.block_num = 2;
-    record_buffer_info.block_size = 320*4;//576;
-    record_buffer_info.buffer_size = record_buffer_info.block_size * record_buffer_info.block_num;
-    record_buffer_info.pcm_buffer = pvPortMalloc(record_buffer_info.buffer_size);
-    cm_config_pcm_buffer(0, CODEC_INPUT, &record_buffer_info);
-    //配置录音音频格式
-    cm_config_codec(0, CODEC_INPUT, &record_sound_info);
-    //开始录音
-    cm_start_codec(0, CODEC_INPUT);
-#endif
-    //配置IIS输出PCM buffer
-    cm_play_buffer_info_t pcm_buffer_info;
-    pcm_buffer_info.block_num = 2;
-    pcm_buffer_info.buffer_num = 4;
-    pcm_buffer_info.block_size = 320*2;
-    pcm_buffer_info.buffer_size = pcm_buffer_info.block_size * pcm_buffer_info.block_num;
-    pcm_buffer_info.pcm_buffer = pvPortMalloc(pcm_buffer_info.buffer_size*pcm_buffer_info.buffer_num);
-    // cm_config_pcm_buffer(IIS_OUT_INDEX, CODEC_OUTPUT, &pcm_buffer_info);//TODO err
-    cm_config_pcm_buffer(IIS_OUT_INDEX, CODEC_OUTPUT, (cm_pcm_buffer_info_t*)&pcm_buffer_info);
-    //配置IIS放音音频格式
-    cm_sound_info_t play_sound_info = record_sound_info;
-    cm_config_codec(IIS_OUT_INDEX, CODEC_OUTPUT, &play_sound_info);
-    //开始放音
-    cm_start_codec(IIS_OUT_INDEX, CODEC_OUTPUT);
-
-    // cm_set_codec_dac_gain(0, 50, 50);
-    while(1)
-    {
-        #if 0
-        // 录音转放音
-        uint32_t data_addr, data_size;
-        cm_read_codec(0, &data_addr, &data_size);
-        volatile uint32_t out_p = NULL;
-        cm_get_pcm_buffer(1,&out_p,portMAX_DELAY);
-        
-        if (out_p)
-        {
-            MASK_ROM_LIB_FUNC->newlibcfunc.memcpy_p(out_p, data_addr, BLOCK_SIZE_TEST*2*2);
-            cm_write_codec(1, out_p,portMAX_DELAY);
-        }
-        #endif
-
-        volatile uint32_t out_p; 
-        cm_get_pcm_buffer(0,&out_p,portMAX_DELAY);
-        MASK_ROM_LIB_FUNC->newlibcfunc.memcpy_p((void*)out_p, (void*)send_buf_addr, BLOCK_SIZE_TEST*2*2);
-        cm_write_codec(0, (void*)out_p,portMAX_DELAY);
-
-        vTaskDelay(5000);
-    }
-}
-
-void iis_test(void)
-{
-    xTaskCreate(record_task,"record_task",256,NULL,4,NULL);
-}
-#endif

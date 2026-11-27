@@ -1,244 +1,79 @@
 
 SDK_PATH ?= ../../..
 
+include $(SDK_PATH)/system/user_alg_config.mk
 include $(SDK_PATH)/utils/common_head.mk
 
-########单一算法定义(注意:下面算法变量的值用户不可修改，值后更不能有空格)######## 
-#只用ASR识别功能
-USE_NULL          := 0
-#ASR+声纹注册功能 
-USE_VPR           := 1
-#哭声检测功能 
-USE_SED_CRY       := 2
-#ASR+深度降噪功能    
-USE_DENOISE_NN    := 3
-#ASR+声源定位功能-双mic算法功能，仅支持双mic，不能和AEC同时开启，除非硬件外挂一个codec做AEC信号回采  
-USE_AI_DOA        := 4
-#鼾声检测功能 
-USE_SED_SNORE     := 5
-#ASR+男女声纹检测功能      
-USE_WMAN_VPR      := 6
-#ASR+自学习功能-请在安静环境下，用清晰洪亮的声音进行指令学习，避免环境噪音过大和学习者声音过小导致学习不成功
-USE_CWSL          := 7
-#ASR+使用降混响模块: 降160HZ-4800HZ 消耗28KB内存  0-8000HZ 消耗49KB内存 -双mic算法，仅双mic可用 
-USE_DEREVERB	  := 8
-#ASR+使用回声消除模块: 会占用24K的空间 -当前只支持单mic 
-USE_AEC           := 9
-#自学习+AEC功能-当前只支持单mic
-USE_CWSL_AEC      := 10
-#TTS功能使能
-USE_TTS           := 11
-#BF功能使能:降人声干扰，只支持双网络    -双mic算法，仅双mic可用 
-USE_BF            := 12
-#DOA+AEC:需要外部挂7243e codec，-双mic算法，仅双mic可用  外部回采信号提供IIS0给到语音芯片，同时不支持IIS0采音功能，需要采音功能，可以使能宏USE_UART_SEND_PRE_RSLT_AUDIO=1, 通过串口采集双通道PCM数据
-USE_AI_DOA_AEC    := 13
-#DEREVERB+AEC:需要外部挂7243e codec -双mic算法，仅双mic可用 
-USE_DEREVERB_AEC  := 14
-#BF+AEC:需要外部挂7243e codec -双mic算法，仅双mic可用 
-USE_BF_AEC        := 15 
-#DOA+DEREVERB	  -双mic算法，仅双mic可用 
-USE_DOA_DEREVERB  := 16
-#BF+DEREVERB	  -双mic算法，仅双mic可用 
-USE_BF_DEREVERB   := 17
-#CWSL+DOA -双mic算法，仅双mic可用 
-USE_CWSL_DOA	  := 18
-#ANY_MIC+AEC:需要外部挂7243e codec -双mic算法，仅双mic可用 
-USE_ANY_MIC_AEC	  := 19
-#CWSL+DOA+AEC:需要外部挂7243e codec -双mic算法，仅双mic可用 
-USE_CWSL_DOA_AEC  := 20
-#CWSL+ANY MIC+AEC:需要外部挂7243e codec -双mic算法，仅双mic可用 
-USE_CWSL_ANY_MIC_AEC	:= 21
-#DOA+DEREVERB+AEC:需要外部挂7243e codec	-双mic算法，仅双mic可用 
-USE_DOA_DEREVERB_AEC	:= 22
-
-
-#######################################################################   
-CI_ALG_TYPE := $(USE_NULL)
-
-########可组合算法使能(注意:设置变量值后面不能有空格，只能是0/1)########
-#---单麦就近唤醒:1-开启/0-关闭
-USE_PWK_ENABLE                 := 0
-#---是否开启动态ALC功能，1:开启，0:关闭; -单mic算法，仅单mic可用
-USE_ALC_AUTO_SWITCH_MODULE     := 0
-#---意图数量: 1-单意图   >1为多意图，最大支持3意图, CWSL自学习算法和BF算法不支持多意图, 多意图开AEC，只支持唤醒词打断
-MULT_INTENT                    := 1
-#---大模型使能(声学模型≥2M需要使能该参数)
-USE_LARGE_MODEL                := 0
-#---播放器类型: 0-精简播放器(相比老播放器节约内存15KB,功能简单) 1-老播放器(占内存较多，功能完善)
-USE_AUDIO_PLAYER_TYPE          := 1
-########################################################################
 
 #算法功能编译配置
-ifeq ($(CI_ALG_TYPE), $(USE_NULL))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_null.lds
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_null.a
-C_FLAGS += -DNO_ASR_FLOW=0 -DUSE_NULL=1
-LIBS := -lasr_dis_deepse_v2 
-else ifeq ($(CI_ALG_TYPE), $(USE_DENOISE_NN))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_denoise.lds
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_denoise.a
-C_FLAGS += -DUSE_DENOISE_NN=1
-LIBS := -lasr_dis_deepse_v2
-#大的模型录音缓存buffer需要开大
-ifeq ($(USE_LARGE_MODEL), 1)
-C_FLAGS += -DUSE_LARGE_MODEL=1
-endif
-else ifeq ($(CI_ALG_TYPE), $(USE_VPR))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_vpr.lds
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_vpr.a
-C_FLAGS += -DUSE_VPR=1 
-LIBS := -lasr_dis_deepse_v2
-USE_DECODE_FRM := 1
-else ifeq ($(CI_ALG_TYPE), $(USE_WMAN_VPR))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_wman_vpr.lds
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_wman_vpr.a
-C_FLAGS += -DUSE_WMAN_VPR=1
-LIBS := -lasr_dis_deepse_v2
-USE_DECODE_FRM := 1
-else ifeq ($(CI_ALG_TYPE), $(USE_AI_DOA))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_doa.lds
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_doa.a
-C_FLAGS += -DUSE_AI_DOA=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DHOST_CODEC_CHA_NUM=2 -DHOST_MIC_USE_NUMBER=2
-LIBS := -lasr_dis_deepse_v2
-USE_DECODE_FRM := 1
-ifeq ($(USE_LARGE_MODEL), 1)
-C_FLAGS += -DUSE_LARGE_MODEL=1
-endif
-else ifeq ($(CI_ALG_TYPE), $(USE_SED_CRY))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_sed.lds
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_sed_cry.a
-C_FLAGS += -DUSE_SED=1 -DUSE_SED_CRY=1 -DNO_ASR_FLOW=1 
-LIBS := -lasr_dis_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_SED_SNORE))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_sed.lds
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_sed_snore.a
-C_FLAGS += -DUSE_SED=1 -DUSE_SED_SNORE=1 -DNO_ASR_FLOW=1 
-LIBS := -lasr_dis_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_CWSL))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_cwsl.lds
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_cwsl.a
-C_FLAGS += -DUSE_CWSL=1
-LIBS := -lasr_dis_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_AEC))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_aec.lds
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_aec.a  
-C_FLAGS += -DUSE_AEC_MODULE=1  -DHOST_MIC_USE_NUMBER=1 -DHOST_CODEC_CHA_NUM=2
-LIBS := -lasr_dis_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_DEREVERB))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_dereverb.lds
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_dereverb.a
-C_FLAGS += -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DUSE_DEREVERB_MODULE=1 -DHOST_MIC_USE_NUMBER=2
-LIBS := -lasr_dis_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_CWSL_AEC))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_cwsl_aec.lds
-C_FLAGS += -DUSE_CWSL=1 -DUSE_AEC_MODULE=1 -DHOST_MIC_USE_NUMBER=1 -DHOST_CODEC_CHA_NUM=2
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_cwsl_aec.a
-LIBS := -lasr_dis_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_TTS))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_tts.lds
-C_FLAGS += -DUSE_TTS=1 -DNO_ASR_FLOW=1
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_tts.a
-LIBS := -lasr_dis_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_BF))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_bf.lds
-C_FLAGS += -DDEEP_SEPARATE_ENABLE=1 -DUSE_BEAMFORMING_MODULE=1  -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DHOST_CODEC_CHA_NUM=2 -DHOST_MIC_USE_NUMBER=2
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_bf.a
-LIBS := -lasr_use_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_AI_DOA_AEC))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_doa_aec.lds
-C_FLAGS += -DUSE_AI_DOA=1 -DUSE_AEC_MODULE=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DHOST_CODEC_CHA_NUM=2  -DHOST_MIC_USE_NUMBER=2 -DUSE_IIS1_OUT_PRE_RSLT_AUDIO=1 
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_doa_aec.a
-LIBS := -lasr_dis_deepse_v2
-USE_DECODE_FRM := 1
-ifeq ($(USE_LARGE_MODEL), 1)
-C_FLAGS += -DUSE_LARGE_MODEL=1
-endif
-else ifeq ($(CI_ALG_TYPE), $(USE_DEREVERB_AEC))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_dereverb_aec.lds
-C_FLAGS += -DUSE_DEREVERB_MODULE=1 -DUSE_AEC_MODULE=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1  -DHOST_CODEC_CHA_NUM=2 -DHOST_MIC_USE_NUMBER=2 -DUSE_IIS1_OUT_PRE_RSLT_AUDIO=1 
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_dereverb_aec.a
-LIBS := -lasr_dis_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_BF_AEC))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_bf_aec.lds
-C_FLAGS += -DDEEP_SEPARATE_ENABLE=1  -DUSE_BEAMFORMING_MODULE=1 -DUSE_AEC_MODULE=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1  -DHOST_CODEC_CHA_NUM=2 -DHOST_MIC_USE_NUMBER=2 -DUSE_IIS1_OUT_PRE_RSLT_AUDIO=1
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_bf_aec.a
-LIBS := -lasr_use_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_DOA_DEREVERB))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_doa_dereverb.lds
-C_FLAGS += -DUSE_AI_DOA=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DUSE_DEREVERB_MODULE=1 -DHOST_CODEC_CHA_NUM=2 -DHOST_MIC_USE_NUMBER=2 
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_doa_dereverb.a
-LIBS := -lasr_dis_deepse_v2
-USE_DECODE_FRM := 1
-ifeq ($(USE_LARGE_MODEL), 1)
-C_FLAGS += -DUSE_LARGE_MODEL=1
-endif
-else ifeq ($(CI_ALG_TYPE), $(USE_BF_DEREVERB))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_bf_dereverb.lds
-C_FLAGS += -DDEEP_SEPARATE_ENABLE=1 -DUSE_BEAMFORMING_MODULE=1 -DUSE_DEREVERB_MODULE=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DHOST_CODEC_CHA_NUM=2  -DHOST_MIC_USE_NUMBER=2
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_bf_dereverb.a
-LIBS := -lasr_use_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_CWSL_DOA))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_cwsl_doa.lds
-C_FLAGS += -DUSE_CWSL=1 -DUSE_AI_DOA=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DHOST_CODEC_CHA_NUM=2 -DHOST_MIC_USE_NUMBER=2 
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_cwsl_doa.a
-LIBS := -lasr_dis_deepse_v2
-USE_DECODE_FRM := 1
-ifeq ($(USE_LARGE_MODEL), 1)
-C_FLAGS += -DUSE_LARGE_MODEL=1
-endif
-else ifeq ($(CI_ALG_TYPE), $(USE_ANY_MIC_AEC))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_any_mic_aec.lds
-C_FLAGS += -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DUSE_DUAL_MIC_ANY=1 -DUSE_AEC_MODULE=1  -DHOST_CODEC_CHA_NUM=2  -DHOST_MIC_USE_NUMBER=2
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_any_mic_aec.a
-LIBS := -lasr_dis_deepse_v2
-else ifeq ($(CI_ALG_TYPE), $(USE_CWSL_DOA_AEC))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_cwsl_doa_aec.lds
-C_FLAGS +=-DUSE_CWSL=1 -DUSE_AEC_MODULE=1 -DUSE_AI_DOA=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DHOST_CODEC_CHA_NUM=2 -DHOST_MIC_USE_NUMBER=2 -DUSE_IIS1_OUT_PRE_RSLT_AUDIO=1  
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_cwsl_doa_aec.a
-LIBS := -lasr_dis_deepse_v2
-USE_DECODE_FRM := 1
-ifeq ($(USE_LARGE_MODEL), 1)
-C_FLAGS += -DUSE_LARGE_MODEL=1
-endif
-else ifeq ($(CI_ALG_TYPE), $(USE_CWSL_ANY_MIC_AEC))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_cwsl_any_mic_aec.lds
-C_FLAGS += -DUSE_CWSL=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DUSE_DUAL_MIC_ANY=1 -DUSE_AEC_MODULE=1  -DHOST_CODEC_CHA_NUM=2  -DHOST_MIC_USE_NUMBER=2
-LIBS := -lasr_dis_deepse_v2
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_cwsl_any_mic_aec.a
-else ifeq ($(CI_ALG_TYPE), $(USE_DOA_DEREVERB_AEC))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_doa_dereverb_aec.lds
-C_FLAGS += -DUSE_AI_DOA=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DUSE_DEREVERB_MODULE=1 -DUSE_AEC_MODULE=1 -DHOST_CODEC_CHA_NUM=2 -DHOST_MIC_USE_NUMBER=2 
-LIBS := -lasr_dis_deepse_v2
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_doa_dereverb_aec.a
-USE_DECODE_FRM := 1
-ifeq ($(USE_LARGE_MODEL), 1)
-C_FLAGS += -DUSE_LARGE_MODEL=1
-endif
-else ifeq ($(CI_ALG_TYPE), $(USE_CWSL_DOA_DEREVERB_AEC))
-ALG_PRO_LINK_LDS := ../lds/ci130x_alg_pro_cwsl_doa_dereverb_aec.lds
-C_FLAGS +=  -DUSE_CWSL=1 -DUSE_AI_DOA=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DUSE_DEREVERB_MODULE=1 -DUSE_AEC_MODULE=1 -DHOST_CODEC_CHA_NUM=2 -DHOST_MIC_USE_NUMBER=2 
-LIB_BNPU_CORE_ALG_PRO := libbnpu_core_alg_pro_cwsl_doa_dereverb_aec.a
-LIBS := -lasr_dis_deepse_v2
-USE_DECODE_FRM := 1
-ifeq ($(USE_LARGE_MODEL), 1)
-C_FLAGS += -DUSE_LARGE_MODEL=1
-endif
+ifeq ($(USE_ASR), 1)
+	C_FLAGS += -DCINN_MAX_CHA_NUM=1   -DNO_ASR_FLOW=0
 else
-$(error "error:请配置正确的CI_ALG_TYPE参数!!!")
+	C_FLAGS += -DNO_ASR_FLOW=1
+endif
+ifeq ($(USE_ANY_MIC), 1)
+C_FLAGS += -DUSE_DUAL_MIC_ANY=1 -DHOST_CODEC_CHA_NUM=2  -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DHOST_MIC_USE_NUMBER=2
+endif
+ifeq ($(USE_AEC), 1)
+C_FLAGS += -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DUSE_AEC_MODULE=1 -DMULT_INTENT=$(MULT_INTENT) -DHOST_MIC_USE_NUMBER=2 -DHOST_CODEC_CHA_NUM=2
+endif
+ifeq ($(USE_CWSL), 1)
+C_FLAGS += -DUSE_CWSL=1 -DMULT_INTENT=$(MULT_INTENT)
+endif
+ifeq ($(USE_DEREVERB), 1)
+C_FLAGS += -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DUSE_DEREVERB_MODULE=1 -DMULT_INTENT=$(MULT_INTENT) -DHOST_MIC_USE_NUMBER=2
+endif
+ifeq ($(USE_NN_DENOISE), 1) 
+C_FLAGS += -DUSE_NN_DENOISE=1 -DMULT_INTENT=$(MULT_INTENT)
+endif
+ifeq ($(USE_TRA_DENOISE), 1) 
+C_FLAGS += -DUSE_TRA_DENOISE=1 -DMULT_INTENT=$(MULT_INTENT)
+endif
+ifeq ($(USE_NN_DOA), 1)
+C_FLAGS += -DUSE_NN_DOA=1 -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DHOST_CODEC_CHA_NUM=2 -DHOST_MIC_USE_NUMBER=2 -DMULT_INTENT=$(MULT_INTENT)
+USE_DECODE_FRM := 1
+endif
+ifeq ($(USE_GCC_DOA), 1)
+C_FLAGS += -DUSE_GCC_DOA=1  -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DHOST_CODEC_CHA_NUM=2  -DHOST_MIC_USE_NUMBER=2 -DMULT_INTENT=$(MULT_INTENT)
+endif
+ifeq ($(USE_IIS_RECORD), 1)
+C_FLAGS += -DUSE_IIS1_OUT_PRE_RSLT_AUDIO=1
+endif
+ifeq ($(USE_VPR), 1)
+C_FLAGS += -DUSE_VPR=1 -DMULT_INTENT=$(MULT_INTENT)
+USE_DECODE_FRM := 1
+endif
+ifeq ($(USE_WMAN_VPR), 1)
+C_FLAGS += -DUSE_WMAN_VPR=1 -DMULT_INTENT=$(MULT_INTENT)
+USE_DECODE_FRM := 1
+endif
+ifeq ($(USE_BF), 1)
+C_FLAGS += -DDEEP_SEPARATE_ENABLE=1 -DUSE_BEAMFORMING_MODULE=1   -DOFFLINE_DUAL_MIC_ALG_SUPPORT=1 -DHOST_CODEC_CHA_NUM=2 -DMULT_INTENT=1 -DHOST_MIC_USE_NUMBER=2
+endif
+ifeq ($(USE_SED_CRY), 1)
+C_FLAGS += -DUSE_SED=1 -DUSE_SED_CRY=1 -DNO_ASR_FLOW=1 -DMULT_INTENT=$(MULT_INTENT)
+endif
+ifeq ($(USE_SED_SNORE), 1)
+C_FLAGS += -DUSE_SED=1 -DUSE_SED_SNORE=1 -DNO_ASR_FLOW=1 -DMULT_INTENT=$(MULT_INTENT)
+endif
+ifeq ($(USE_IIS_RECORD), 1)
+C_FLAGS += -DUSE_IIS1_OUT_PRE_RSLT_AUDIO=1 	
 endif
 
+
+#事件检测内存消耗大，不能和识别同时开启
+ifeq ($(USE_ASR), 1) 
+ifneq ($(filter 1, $(USE_SED_CRY) $(USE_SED_SNORE)),)
+	$(error cannot support both ASR and sed)
+endif
+endif
 
 ifeq ($(USE_AUDIO_PLAYER_TYPE), 0)
 	C_FLAGS += -DSIMPLE_AUDIO_PLAYER_ENABLE=1
 else
 	C_FLAGS += -DSIMPLE_AUDIO_PLAYER_ENABLE=0
 endif
-ifeq ($(USE_PWK_ENABLE), 1)
-	USE_DECODE_FRM := 1
-	C_FLAGS += -DUSE_PWK=1
-else
-	C_FLAGS += -DUSE_PWK=0
-endif
+
 ifeq ($(USE_ALC_AUTO_SWITCH_MODULE), 1)
 	C_FLAGS += -DUSE_ALC_AUTO_SWITCH_MODULE=1
 else
@@ -252,9 +87,13 @@ else
 	USE_DECODE_FRM := 1
 endif
 
-
-
-
+ifeq ($(USE_BF), 1)
+	LIBS := -lasr_host_use_deepse_v2 
+else
+	LIBS := -lasr_host_dis_deepse_v2 
+endif
+ALG_PRO_LINK_LDS := ../lds/ci130x_asr_alg_mcu.lds
+LIB_BNPU_CORE_ALG_PRO := ci130x_asr_alg_bnpu.a
 SECONDARY_FLASH := ../firmware/user_code/[0]code.bin 
 SECONDARY_LIST := $(BUILD_DIR)/$(PROJECT_NAME).lst
 LTO_OPTION = -flto
@@ -297,8 +136,10 @@ LD_FLAGS += -Wl,--wrap,vsnprintf
 LD_FLAGS += -Wl,--wrap,sprintf
 LD_FLAGS += -Wl,--wrap,sscanf
 LD_FLAGS += -Wl,--wrap,abs
+LD_FLAGS += -Wl,--wrap,isnanf
 LD_FLAGS += -Wl,--wrap,isnan
 LD_FLAGS += -Wl,--wrap,isinf
+LD_FLAGS += -Wl,--wrap,isinff
 LD_FLAGS += -Wl,--wrap,cosf
 LD_FLAGS += -Wl,--wrap,sinf
 LD_FLAGS += -Wl,--wrap,tanf
@@ -327,13 +168,48 @@ endif
 
 endif
 
+#===========================================================
+# BNPU 核心算法库联动构建:
+# 构建本工程前, 先用 utils/parse_user_alg_config_mk.lua 比对 system/user_alg_config.mk
+# 与 bnpu_core_alg_pro/project_file/config.a 中的算法宏快照,
+# 只要有宏不一致或 BNPU 算法库缺失, 就先同步 config.a,
+# 再进入 bnpu_core_alg_pro/project_file 重建 BNPU 核心算法工程
+#===========================================================
+BNPU_ALG_PRJ_DIR  := $(SDK_PATH)/components/bnpu_core_alg_pro/project_file
+BNPU_ALG_PRJ_NAME := $(notdir $(patsubst %/,%,$(dir $(BNPU_ALG_PRJ_DIR))))
+BNPU_ALG_CONFIG_A := $(BNPU_ALG_PRJ_DIR)/config.a
+USER_ALG_CONFIG_MK := $(SDK_PATH)/system/user_alg_config.mk
+BNPU_ALG_LIB_FILE := $(SDK_PATH)/$(LIBS_PATH)/$(LIB_BNPU_CORE_ALG_PRO)
 
+ifneq ($(MAKECMDGOALS), clean)
+# 算法宏与链接地址由 user_alg_config.mk 决定, BNPU 算法库必须先于本工程生成;
+# 该规则仅在 BNPU 算法库缺失/比 user_alg_config.mk 陈旧时触发(由 make 依赖时间戳判断),
+# 触发后 check 宏快照(config.a): 不一致或快照缺失则视为需要重建,
+# 最后 clean+重建 BNPU 工程 (注意: bnpu clean 的 rm *.a 会误删 config.a,
+# 故 sync 放在 clean 之后执行, 保证 make 前快照已写入并恢复)
+$(ALG_PRO_LINK_LDS): $(BNPU_ALG_LIB_FILE)
 
+$(BNPU_ALG_LIB_FILE): $(USER_ALG_CONFIG_MK)
+	@echo 'check alg config: $(notdir $(USER_ALG_CONFIG_MK)) vs config.a'
+	@$(LUA) $(SDK_PATH)/utils/parse_user_alg_config_mk.lua check $(USER_ALG_CONFIG_MK) $(BNPU_ALG_CONFIG_A) ; \
+	if [ $$? -ne 0 ] ; then \
+		echo 'alg config changed: sync config.a and rebuild bnpu project' ; \
+	else \
+		echo 'alg config identical: rebuild bnpu project (bnpu lib outdated/missing)' ; \
+	fi ; \
+	$(MAKE) -C $(BNPU_ALG_PRJ_DIR) clean PROJECT_NAME=$(BNPU_ALG_PRJ_NAME) || exit 1 ; \
+	$(LUA) $(SDK_PATH)/utils/parse_user_alg_config_mk.lua sync $(USER_ALG_CONFIG_MK) $(BNPU_ALG_CONFIG_A) || exit 1 ; \
+	$(MAKE) -C $(BNPU_ALG_PRJ_DIR) PROJECT_NAME=$(BNPU_ALG_PRJ_NAME) || exit 1
+endif
 
-$(BUILD_DIR)/$(PROJECT_NAME).elf: $(OBJS) $(USER_OBJS) build/source_file.mk $(LIB_FILES) $(ALG_PRO_LINK_LDS)  makefile 
+SDK_ALG_PRO_SRAM_HOST_END_ADDR = $(shell grep 'SDK_ALG_PRO_SRAM_HOST_END_ADDR' ../../../utils/common.lds | grep -o '0x[0-9a-fA-F]*')
+$(ALG_PRO_LINK_LDS):../lds/ci130x_asr_alg_mcu_temp.lds
+	sed 's/@@SDK_ALG_PRO_SRAM_HOST_END_ADDR@@/$(SDK_ALG_PRO_SRAM_HOST_END_ADDR)/g' $< >$@
+
+$(BUILD_DIR)/$(PROJECT_NAME).elf: $(OBJS) $(USER_OBJS) build/source_file.mk $(LIB_FILES) $(ALG_PRO_LINK_LDS) makefile
 	@echo 'Building target: $@'
-	@echo 'Inving: GNU RISC-V Cross C++ Linker'
-	$(CC_PREFIX)$(LD) $(LD_FLAGS) -o "$(BUILD_DIR)/$(PROJECT_NAME).elf" $(OBJS) $(USER_OBJS) $(LIBS) 
+	@echo 'Invoking: GNU RISC-V Cross C++ Linker'
+	$(CC_PREFIX)$(LD) $(LD_FLAGS)  -o "$(BUILD_DIR)/$(PROJECT_NAME).elf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -347,15 +223,16 @@ $(SECONDARY_FLASH): $(BUILD_DIR)/$(PROJECT_NAME).elf
 	@echo ' '
 	
 $(BUILD_DIR)/$(PROJECT_NAME).lst: $(BUILD_DIR)/$(PROJECT_NAME).elf
-	@echo 'Inving: GNU RISC-V Cross Create Listing'
+	@echo 'Invoking: GNU RISC-V Cross Create Listing'
 	$(CC_PREFIX)$(OD) --demangle --disassemble --reloc --wide "$(BUILD_DIR)/$(PROJECT_NAME).elf" > "$(BUILD_DIR)/$(PROJECT_NAME).lst"
 	$(CC_PREFIX)$(SIZE) --format=berkeley "$(BUILD_DIR)/$(PROJECT_NAME).elf"
 	@echo 'Finished building: $@'
 	@echo ' '
 
-secondary-outputs: $(SECONDARY_FLASH) $(SECONDARY_LIST)
-	
-	
 
-include $(SDK_PATH)/utils/common_tail.mk
+
+secondary-outputs: $(ALG_PRO_LINK_LDS) $(SECONDARY_FLASH) $(SECONDARY_LIST) 
+
+
+include $(SDK_PATH)/utils/common_tail_mcu.mk
 

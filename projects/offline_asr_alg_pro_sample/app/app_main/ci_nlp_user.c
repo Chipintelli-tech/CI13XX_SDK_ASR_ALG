@@ -204,13 +204,11 @@ extern cmd_handle_t cmd_info_find_command_by_string(const char *cmd_string);
 extern uint32_t cmd_info_get_semantic_id(cmd_handle_t cmd_handle);
 
 char nlp_intent_temp_buf[NLP_BUFFER_MAX] = {0};
-
 void nlp_intents_sort(nlp_data_t *res)
 {
     uint32_t turn_on_semantic_id =  0x0101;
     uint32_t turn_off_semantic_id = 0x0100;
     uint32_t gs_semantic_id = 0;
-    
     uint8_t powe_on_idx = 0xFF;
     uint8_t powe_off_idx = 0xFF;
     if (res->intent_count)
@@ -221,7 +219,6 @@ void nlp_intents_sort(nlp_data_t *res)
             {
                 cmd_handle_t cmd_handle_semantic = cmd_info_find_command_by_string(res->intent[i]);
                 gs_semantic_id = cmd_info_get_semantic_id(cmd_handle_semantic);
-                //ci_loginfo(LOG_USER, "gs_semantic_id=0x%04X \n", gs_semantic_id);
                 if(gs_semantic_id == turn_on_semantic_id)
                 {
                     powe_on_idx = i;
@@ -232,10 +229,8 @@ void nlp_intents_sort(nlp_data_t *res)
                 }
             }
         }
-        //开机关机提到最前面
         if(powe_on_idx == 0xFF && powe_off_idx == 0xFF)
         {
-            //不调顺序
         }
         else if(powe_on_idx != 0xFF && powe_off_idx == 0xFF)//只有开机调顺序
         {
@@ -250,7 +245,6 @@ void nlp_intents_sort(nlp_data_t *res)
                 strncpy(nlp_intent_temp_buf, res->intent[1], NLP_BUFFER_MAX);
                 strncpy(res->intent[1], res->intent[2], NLP_BUFFER_MAX);
                 strncpy(res->intent[2], nlp_intent_temp_buf, NLP_BUFFER_MAX);
-
                 strncpy(nlp_intent_temp_buf, res->intent[0], NLP_BUFFER_MAX);
                 strncpy(res->intent[0], res->intent[1], NLP_BUFFER_MAX);
                 strncpy(res->intent[1], nlp_intent_temp_buf, NLP_BUFFER_MAX);
@@ -279,7 +273,6 @@ void nlp_intents_sort(nlp_data_t *res)
                 || (powe_on_idx == 1 && powe_off_idx == 2)
                 || (powe_on_idx == 2 && powe_off_idx == 1))//不调整
             {
-                //保持不变
             }
             else if(powe_on_idx == 2 && powe_off_idx == 0)//开机放到最后
             {

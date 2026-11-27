@@ -12,8 +12,8 @@
 
 #include "ci_log.h"
 #include "ci_debug_config.h"
-
-#if CONFIG_DEBUG_EN
+#include "sdk_default_config.h"
+#if 1
 #define CI_ASSERT(x,msg)                                                                                                    \
     if( ( x ) == 0 )                                                                                                        \
     {                                                                                                                       \
@@ -22,7 +22,6 @@
         while(1)  asm volatile ("ebreak");                                                                                  \
     }
 #else
-#define CI_ASSERT(x,msg) do{}while(0)
+#define CI_ASSERT(x,msg) do{}while(0);
 #endif
-
 #endif /* _CI_ASSERT_H_ */

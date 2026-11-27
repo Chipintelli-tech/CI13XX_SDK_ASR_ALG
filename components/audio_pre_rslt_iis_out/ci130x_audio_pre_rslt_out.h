@@ -26,7 +26,7 @@ typedef struct
 
 
 void audio_pre_rslt_out_play_card_init(void);
-void audio_pre_rslt_write_data(int16_t* rslt,int16_t* origin);
+void audio_pre_rslt_write_data(int16_t* rslt,int16_t* origin, uint32_t wrapfft_audio_addr);
 void audio_pre_rslt_stop(void);
 void audio_pre_rslt_start(void);
 void uart_record_task(void *p_arg);

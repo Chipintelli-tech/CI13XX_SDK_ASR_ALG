@@ -149,12 +149,6 @@ void sap_stop()
     }
     sap_send_msg(&msg, NULL);
     vTaskDelay(2);
-
-    // while(sap_info.state != SAP_STATE_IDLE)
-    // {
-    //     mprintf("zt test3\r\n");
-    //     vTaskDelay(100);
-    // }
 }
 
 /**
@@ -247,7 +241,7 @@ static int sap_start_play_inner(sap_msg_t *msg)
             .request_block_size = msg->request_block_size,
             .data_request_callback = msg->data_request_callback,
         };
-        src_type = msg->src_type,
+        src_type = msg->src_type;
         pdf_init(&src_data_info);
 
         // malloc a buffer to recevie output data from decoder.
@@ -276,10 +270,6 @@ static int sap_start_play_inner(sap_msg_t *msg)
             ret = -3;
             break;
         }
-#if (PLAYER_CONTROL_PA)
-        audio_play_hw_pa_da_ctl(ENABLE, true);
-        vTaskDelay(pdMS_TO_TICKS(100));
-#endif
         if (format_info.src_data_size > 0)
         {
             pdf_set_total_data_size(format_info.src_data_size);
@@ -425,8 +415,8 @@ static int sap_decode_one_frame(void)
 
         cm_release_pcm_buffer(PLAY_CODEC_ID, CODEC_OUTPUT, (void *)pcm_buf);
         wait_codec_play_finish();
-        if(err != ERR_MP3_MAINDATA_UNDERFLOW)
-            ci_logwarn(LOG_AUDIO_PLAY, "audio decorde err %d,bad frame!\n", err);
+        // if(err != ERR_MP3_MAINDATA_UNDERFLOW)
+        //     ci_logwarn(LOG_AUDIO_PLAY, "audio decorde err %d,bad frame!\n", err);
     }
     return ret;
 }
@@ -439,11 +429,18 @@ static int sap_stop_play_inner(int32_t play_cb_state)
     cm_stop_codec(PLAY_CODEC_ID, CODEC_OUTPUT);
     sap_info.cur_decoder->deinit(sap_info.decoder_handle);
     sap_info.decoder_handle = NULL;
-
+    pdf_deinit();
 #if (PLAYER_CONTROL_PA)
     audio_play_hw_pa_da_ctl(DISABLE, true);
 #endif
+    #if USE_AEC_MODULE
+    if(CI_SS_PLAY_STATE_PLAYING == ciss_get(CI_SS_PLAY_STATE) && !check_combination_index_state())
+    {
+        ciss_set(CI_SS_PLAY_STATE, CI_SS_PLAY_STATE_PLAYING_TO_IDLE); // 设置播放结束
+    }
+    #else
     ciss_set(CI_SS_PLAY_STATE, CI_SS_PLAY_STATE_IDLE);
+    #endif
     ci_loginfo(LOG_AUDIO_PLAY,"Play end\n");
     if (sap_info.play_end_callback)
     {
@@ -475,8 +472,6 @@ static void task_simple_audio_player(void *pvParameters)
                 // stop last play.
                 sap_info.state = SAP_STATE_STOPPING;
                 sap_stop_play_inner(-1);
-                pdf_deinit();
-                //mprintf("SAP_STATE_IDLE2\r\n");
                 sap_info.state = SAP_STATE_IDLE;
                 audio_play_state = AUDIO_PLAY_STATE_IDLE;
             }
@@ -490,6 +485,8 @@ static void task_simple_audio_player(void *pvParameters)
                 if (rst != 0)
                 {
                     // ci_logerr(LOG_AUDIO_PLAY, "start play failed,err %d!\n", rst);
+                    sap_info.state = SAP_STATE_STOPPING;
+                    sap_stop_play_inner(-1);
                     sap_info.state = SAP_STATE_IDLE;
                     audio_play_state = AUDIO_PLAY_STATE_IDLE;
                     wait_time = portMAX_DELAY;
@@ -514,7 +511,6 @@ static void task_simple_audio_player(void *pvParameters)
                     ci_logdebug(LOG_AUDIO_PLAY, "end err %d\n", rst);
                     sap_info.state = SAP_STATE_STOPPING;
                     sap_stop_play_inner(0);
-                    //mprintf("SAP_STATE_IDLE3\r\n");
                     sap_info.state = SAP_STATE_IDLE;
                     audio_play_state = AUDIO_PLAY_STATE_IDLE;
                     wait_time = portMAX_DELAY;

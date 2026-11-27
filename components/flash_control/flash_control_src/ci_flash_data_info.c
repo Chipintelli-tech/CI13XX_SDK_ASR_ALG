@@ -239,7 +239,6 @@ uint32_t ci_flash_data_info_init(uint8_t default_model_group_id)
         vTaskDelay(pdMS_TO_TICKS(2));
     }
 
-
     uint32_t ret = 1;
 
     //读取分区信息表
@@ -276,15 +275,14 @@ uint32_t ci_flash_data_info_init(uint8_t default_model_group_id)
         #endif
     }
     #endif
-    
-	#if 1
+
     uint32_t file_addr;
     if (get_file_addr(partition_table.user_file_offset, COMMAND_INFO_FILE_ID, &file_addr, NULL))
     {
         file_addr += partition_table.user_file_offset;
         ret = cmd_info_init(file_addr, partition_table.voice_offset, default_model_group_id);
     }
-	#endif
+   
     set_ci_flash_data_info_init_flag(); 
     cinv_init(partition_table.nv_data_offset, partition_table.nv_data_size);
     ci_loginfo(LOG_NVDATA,"nv_data_offset = %08x\n",partition_table.nv_data_offset);

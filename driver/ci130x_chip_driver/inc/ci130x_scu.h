@@ -26,12 +26,8 @@ extern "C" {
 #define MAIN_FREQUENCY          200000000     /*内部晶振*/
 #endif
 
-#if USE_BLE
-#define SRC_FREQUENCY_NORMAL    16000000U
-#else
-#define SRC_FREQUENCY_NORMAL    12288000U
-#endif
 
+#define SRC_FREQUENCY_NORMAL    12288000U
 #define SRC_FREQUENCY_LOWPOWER  12288000U
 
 

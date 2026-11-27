@@ -22,13 +22,13 @@ typedef enum
     CI_SS_SYSTEMTICK_CLK,           //OS tick 时钟频率
     CI_SS_VAD_STATE,                //VAD状态：1、VAD start；2、没有VAD start
     CI_SS_NNVAD_STATE,              //VAD状态：1、VAD start；2、没有VAD start
-	CI_SS_NNVAD_IS_OPEN,            //开启nn vad 检测
+	CI_SS_LOCAL_VAD_STATE,          //VAD状态：1、VAD start；0、没有VAD start
     CI_SS_AEC_WORK_STATE,           //aec工作状态设置
     CI_SS_DOA_WORK_STATE,           //doa工作状态设置
     CI_SS_CUR_DOA_AEC_STATE,        //doa和aec当前工作  1-doa 2-aec
     CI_SS_AEC_INIT_STATE,           //AEC初始化状态
     CI_SS_DOA_INIT_STATE,           //DOA初始化状态
-    CI_SS_ALG_DOA_IS_BUSYING,             //等待DOA角度输出
+    CI_SS_ALG_DOA_IS_BUSYING,       //等待DOA角度输出
     CI_SS_ASR_SYS_STATE,            //ASR系统状态：1、ASR启动；2、ASR未启动（后续可能会增加ASR状态）
     CI_SS_WAKING_UP_STATE,          //当前是否处于唤醒状态：1、处于唤醒状态；2、处于非唤醒状态
     CI_SS_CMD_STATE,                //当前命令词是唤醒词还是命令词：1、唤醒词；2、命令词
@@ -52,31 +52,51 @@ typedef enum
     CI_SS_INTERCEPT_ASR_OUT,        //是否拦截ASR输出：0、不拦截；1、拦截
 
     CI_SS_PLAY_TYPE,                //目前正在播放的类型
-    CI_SS_AUDIO_IN_BUFFER_NUM,      //audio buffer num
-    CI_SS_HOST_PARAM_SET_OK,        //主要端参数设置完成ok-0x5A
-    CI_SS_ALC_AUTO_SWITCH_IS_OPEN,
-    CI_SS_AEC_IS_OPEN,
-    CI_SS_DOA_IS_OPEN,
-    CI_SS_DR_IS_OPEN,
-    CI_SS_BF_IS_OPEN,
-    CI_SS_DENOISE_IS_OPEN,
+    CI_SS_AEC_ALC_STATE,
+    CI_SS_AUDIO_IN_BUFFER_NUM,       //audio buffer num
+    CI_SS_HOST_PARAM_SET_OK,         //主要端参数设置完成ok-0x5A
+    CI_SS_ALC_AUTO_SWITCH_EN,        //动态ALC使能
+    CI_SS_CWSL_EN,                   //自学习功能使能
+    CI_SS_AEC_EN,                    //AEC使能
+    CI_SS_NN_DENOISE_EN,             //NN降噪使能
+    CI_SS_TRA_DENOISE_EN,            //传统降噪使能
+    CI_SS_NN_DOA_EN,                 //NN DOA使能
+    CI_SS_VPR_EN,                    //声纹注册使能
+    CI_SS_WMAN_VPR_EN,               //男女声纹使能
+    CI_SS_SED_EN,                    //事件检测使能
+    CI_SS_ASR_EN,                    //开启识别功能
     CI_SS_TWO_CODEC_IS_USED,
     CI_SS_DUALMIC_IS_ANY,
-	
-    CI_SS_CWSL_IN_REG,              //自学习是否在学习状态。
-    CI_SS_PR_ADDR,                  //某基地址 CWSL 用
-    CI_SS_START_SLEEP_PROCESS,      //标记是否已开始退出唤醒处理。
-	CI_SS_ASR_TASK_PAUSED,          //语音识别任务是否已暂停
-	CI_SS_ALG_DEBUG_STATE,          //前端算法启动调试状态
-	CI_SS_AI_DENOISE_MODEL_ADDR,    //深度降噪模型地址
-    CI_SS_AI_DOA_MODEL_ADDR,        //DOA模型地址
-	CI_SS_VPR_MODEL_ADDR,           //声纹模型地址
-    CI_SS_VPR_WMAN_MODEL_ADDR,      //声纹男女声检测模型地址
-    CI_SS_SED_MODEL_ADDR,           //声音事件检测模型地址
+	CI_SS_ASR_ROLL_FRM,              //ASR识别回退帧数
+    CI_SS_CWSL_IN_REG,               //自学习是否在学习状态。
+    CI_SS_PR_ADDR,                   //某基地址 CWSL 用
+    CI_SS_DNN_DIM,                   //DNN_DIM 
+    CI_SS_START_SLEEP_PROCESS,       //标记是否已开始退出唤醒处理。
+	CI_SS_ASR_TASK_PAUSED,           //语音识别任务是否已暂停
+	CI_SS_NN_DENOISE_MODEL_ADDR,     //深度降噪模型地址
+    CI_SS_NN_DOA_MODEL_ADDR,         //NN DOA模型地址
+	CI_SS_VPR_MODEL_ADDR,            //声纹模型地址
+    CI_SS_VPR_WMAN_MODEL_ADDR,       //声纹男女声检测模型地址
+    CI_SS_SED_MODEL_ADDR,            //声音事件检测模型地址
     CI_SS_TTS_ACU_MODEL_ADDR,
     CI_SS_TTS_DUR_MODEL_ADDR,
     CI_SS_GET_DOA_ANGLE,
+    CI_SS_DNN_HOST_CFG_READY,           //DNN模块host端配置是否完成
+    CI_SS_DNN_BNPU_CFG_READY,           //DNN模块BNPU端配置完成
+    CI_SS_DNN_TASK_ASR_REG_EN,          //DNN识别任务注册使能
+    CI_SS_DNN_TASK_DENOISE_REG_EN,      //DNN降噪任务注册使能
+    CI_SS_DNN_TASK_DOA_REG_EN,          //DNN声源定位任务注册使能
+    CI_SS_DNN_TASK_VPR_REG_EN,          //DNNVPR任务注册使能
+    /*DNN模型地址*/
+    CI_SS_DNN_MODEL_FLASH_ADDR1,        //模型1地址
+    CI_SS_DNN_MODEL_FLASH_ADDR2,        //模型2地址
+    CI_SS_DNN_MODEL_FLASH_ADDR3,        //模型3地址
+    CI_SS_DNN_MODEL_FLASH_ADDR4,        //模型4地址
+    CI_SS_DNN_MODEL_FLASH_ADDR5,        //模型5地址
+    CI_SS_DNN_RUN_STATE,                //dnn运行状态
     /*系统参数设置*/
+    CI_SS_AUDIO_DEAL_ERR_CNT,           //音频处理丢帧计数  
+    CI_SS_NN_OUT_ERR_CNT,             
     //decoder参数设置
     CI_SS_DECODER_MIN_ACTIVE,      //默认400，若节点小于8000，可尝试修改到300，不可随意更改
     CI_SS_DECODER_BEAM,            //默认9.5
@@ -84,7 +104,6 @@ typedef enum
 	/*ASR参数*/
     CI_SS_WAKE_UP_START_INDEX,
     CI_SS_WAKE_UP_VALID_FRAME_LEN,
-    CI_SS_FE_REDUCE_MEM,
     CI_SS_CHA_NUM,                 //单双通道数
     CI_SS_INTENT_NUM,              //意图数
     CI_SS_WAKE_UP_START_INDEX_FOR_DOA,
@@ -92,7 +111,6 @@ typedef enum
     CI_SS_WAKE_UP_START_INDEX_FOR_PWK,
     CI_SS_WAKE_UP_VALID_FRAME_LEN_FOR_PWK,
     CI_SS_ANY_MIC_AEC_PCM_THR_VAL,
-    CI_SS_NN_OUT_ERR_CNT,
     //下面的值用于统计状态ID数量，本模块内部使用，请不要修改。
     EM_STATUS_NUM,
 } status_id_t;
@@ -139,10 +157,24 @@ typedef enum
 
 typedef enum
 {
-    CI_SS_PLAY_STATE_IDLE = 0, //当前未播报
-    CI_SS_PLAY_STATE_PLAYING,  //当前处于播报状态
+    CI_SS_PLAY_STATE_IDLE = 0,          //当前未播报
+    CI_SS_PLAY_STATE_PLAYING,           //当前处于播报状态
+    CI_SS_PLAY_STATE_PLAYING_TO_IDLE,   //当前处于播报到停止播报状态
 } ci_ss_play_state;
 
+
+/**
+ * @brief AEC ALC状态
+ *
+ */
+typedef enum
+{
+	CI_SS_AEC_ALC_IDLE = 0,                 /*!< 空闲  */
+	CI_SS_AEC_ALC_SETTING,                  /*!< AEC开始时设置状态  */
+	CI_SS_AEC_ALC_CLOSED,                   /*!< AEC开始时ALC关闭状态，不需要去关闭ALC   */
+	CI_SS_AEC_ALC_OPENED_TO_CLOSE,          /*!< AEC开始时ALC开启状态，需要去关闭ALC   */
+	CI_SS_AEC_ALC_CLOSED_TO_OPEN,           /*!< AEC开始时ALC开启状态，处理时已经关闭，结束时需要去开启ALC   */
+}ci_ss_aec_alc_state;
 typedef enum
 {
     CI_SS_FLASH_POWER_OFF = 0,

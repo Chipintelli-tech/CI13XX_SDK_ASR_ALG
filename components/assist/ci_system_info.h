@@ -11,13 +11,13 @@
 #define _CI_SYSTEM_INFO_H_
 
 #include "ci_debug_config.h"
-
+#include "sdk_default_config.h"
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#if CONFIG_DEBUG_EN
+#if CONFIG_DEBUG_EN && !SDK_RELEASE_EN
 #define PRINT_MEM_STATUS()     get_mem_status()
 #define PRINT_FMEM_STATUS()    get_fmem_status()
 #define PRINT_TASK_STATUS()    get_task_status()

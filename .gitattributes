@@ -1,0 +1,18 @@
+# .gitattributes 自身
+.gitattributes text eol=lf
+
+# Windows批处理，必须CRLF
+*.bat text eol=crlf
+
+# shell脚本
+*.sh text eol=lf
+
+# 各类文本统一仓库存LF
+*.txt text eol=lf
+*.ini text eol=lf
+*.fst.txt text eol=lf
+
+# 二进制，git add . 时禁止任何换行转换
+*.bin binary
+*.dat binary
+*.model binary
